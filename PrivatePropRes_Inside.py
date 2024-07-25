@@ -68,7 +68,7 @@ def extractor(soup, url): # extracts from created urls
 ######################################Functions##########################################################
 async def main():
     fieldnames = ['Listing ID', 'Description', 'Time_stamp']
-    filename = "Comments.csv"
+    filename = "PrivComments.csv"
     ids = []
     semaphore = asyncio.Semaphore(500)
 
@@ -158,8 +158,8 @@ async def main():
             print(f"End Time: {end_time}")
 
     connection_string = "DefaultEndpointsProtocol=https;AccountName=privateproperty;AccountKey=zX/k04pby4o1V9av1a5U2E3fehg+1bo61C6cprAiPVnql+porseL1NVw6SlBBCnVaQKgxwfHjZyV+AStKg0N3A==;BlobEndpoint=https://privateproperty.blob.core.windows.net/;QueueEndpoint=https://privateproperty.queue.core.windows.net/;TableEndpoint=https://privateproperty.table.core.windows.net/;FileEndpoint=https://privateproperty.file.core.windows.net/;"
-    container_name = "privateprop"
-    blob_name = "PrivatePropRes(Inside).csv"
+    container_name = "comments-pics"
+    blob_name = "PrivComments.csv"
 
     blob_client = BlobClient.from_connection_string(connection_string, container_name, blob_name)
 
