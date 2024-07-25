@@ -44,11 +44,6 @@ def getIds(soup):
 def extractor(soup, url): # extracts from created urls
     try:
         prop_ID = None
-        erfSize = None
-        floor_size = None
-        rates = None
-        levy = None
-
         prop_div = soup.find('div', class_='property-features')
         lists = prop_div.find('ul', class_='property-features__list')
         features = lists.find_all('li')
@@ -56,108 +51,24 @@ def extractor(soup, url): # extracts from created urls
             icon = feature.find('svg').find('use').get('xlink:href')
             if '#listing-alt' in icon:
                 prop_ID = feature.find('span',class_='property-features__value').text.strip()
-
-            elif '#property-type' in icon:
-                prop_type = feature.find('span',class_='property-features__value').text.strip()
-
-            elif '#erf-size' in icon:
-                erfSize = feature.find('span',class_='property-features__value').text.strip()
-                erfSize = erfSize.replace('\xa0', ' ')
-
-            elif '#property-size' in icon:
-                floor_size = feature.find('span',class_='property-features__value').text.strip()
-                floor_size = floor_size.replace('\xa0', ' ')
-
-            elif '#rates' in icon:
-                rates = feature.find('span',class_='property-features__value').text.strip()
-                rates = rates.replace('\xa0', ' ')
-
-            elif '#levies' in icon:
-                levy = feature.find('span',class_='property-features__value').text.strip()
-                levy = levy.replace('\xa0', ' ')
-
     except KeyError:
         prop_ID = None
-        erfSize = None
-        prop_type = None
-        floor_size = None
-        rates = None
-        levy = None
-
-    beds = None
-    baths = None
-    lounge = None
-    dining = None
-    garage = None
-    parking = None
-    storeys = None
-
+    
     try:
-        prop_feat_div = soup.find('div', id='property-features-list')
-        lists_feat = prop_feat_div.find('ul', class_='property-features__list')
-        feats = lists_feat.find_all('li')
-        for feat in feats:
-            feat_icon = feat.find('svg').find('use').get('xlink:href')
-            if '#bedrooms' in feat_icon:
-                beds = feat.find('span',class_='property-features__value').text.strip()
-            elif '#bathroom' in feat_icon:
-                baths = feat.find('span',class_='property-features__value').text.strip()
-            elif '#lounges' in feat_icon:
-                lounge = feat.find('span',class_='property-features__value').text.strip()
-            elif '#dining' in feat_icon:
-                dining = feat.find('span',class_='property-features__value').text.strip()
-            elif '#garages' in feat_icon:
-                garage = feat.find('span',class_='property-features__value').text.strip()
-            elif '#covered-parkiung' in feat_icon:
-                parking = feat.find('span',class_='property-features__value').text.strip()
-            elif '#storeys' in feat_icon:
-                storeys = feat.find('span',class_='property-features__value').text.strip()
-
-    except (AttributeError, KeyError) as f:
-        print(f"Property Features Not Found: for {url}")
-        beds = None
-        baths = None
-        lounge = None
-        dining = None
-        garage = None
-        parking = None
-        storeys = None
-
-    agent_name = None
-    agent_url = None
-
-    try:
-        script_tag = soup.find('script', string=re.compile(r'const serverVariables'))
-        if script_tag:
-            script_content = script_tag.string
-            script_data2 = re.search(r'const serverVariables\s*=\s*({.*?});', script_content, re.DOTALL).group(1)
-            json_data = json.loads(script_data2)
-            try:
-                agent_name = json_data['bundleParams']['agencyInfo']['agencyName']
-                agent_url = json_data['bundleParams']['agencyInfo']['agencyPageUrl']
-                agent_url = f"https://www.privateproperty.co.za{agent_url}"
-            except :
-                agent_name = "Private Seller"
-                agent_url = None
-    except (AttributeError, KeyError) as e:
-        agent_name = None
-        agent_url = None
-
-
+        comment_div = soup.find('div', class_='listing-description__text')
+        prop_desc = comment_div.text.strip()
+    except:
+        prop_desc = None
+    
     current_datetime = datetime.now().strftime('%Y-%m-%d')
 
     return {
-        "Listing ID": prop_ID, "Erf Size": erfSize, "Property Type": prop_type, "Floor Size": floor_size,
-        "Rates and taxes": rates, "Levies": levy, "Bedrooms": beds, "Bathrooms": baths, "Lounges": lounge,
-        "Dining": dining, "Garages": garage, "Covered Parking": parking, "Storeys": storeys, "Agent Name": agent_name,
-        "Agent Url": agent_url, "Time_stamp": current_datetime}
+        "Listing ID": prop_ID, "Description": prop_desc, "Time_stamp": current_datetime}
 
 ######################################Functions##########################################################
 async def main():
-    fieldnames = ['Listing ID', 'Erf Size', 'Property Type', 'Floor Size', 'Rates and taxes', 'Levies',
-                  'Bedrooms', 'Bathrooms', 'Lounges', 'Dining', 'Garages', 'Covered Parking', 'Storeys',
-                  'Agent Name', 'Agent Url', 'Time_stamp']
-    filename = "PrivatePropRes(Inside).csv"
+    fieldnames = ['Listing ID', 'Description', 'Time_stamp']
+    filename = "Comments.csv"
     ids = []
     semaphore = asyncio.Semaphore(500)
 
