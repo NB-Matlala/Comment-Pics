@@ -65,17 +65,48 @@ def extractor(soup, url): # extracts from created urls
     return {
         "Listing ID": prop_ID, "Description": prop_desc, "Time_stamp": current_datetime}
 
+def extractor_pics(soup, prop_id): # extracts from created urls
+    try:
+        script_tag = soup.find('script', string=re.compile(r'const serverVariables'))
+        photo_data = []
+        if script_tag:
+            script_content = script_tag.string
+            script_data2 = re.search(r'const serverVariables\s*=\s*({.*?});', script_content, re.DOTALL).group(1)
+            json_data = json.loads(script_data2)
+            photos = json_data['bundleParams']['galleryPhotos']
+        
+            # Extract all mediumUrl urls
+            photo_urls = [item['mediumUrl'] for item in photos]
+        
+            # Store the extracted URLs with the listing ID
+            for url in photo_urls:
+                photo_data.append({'Listing_ID': prop_id, 'Photo_Link': url})
+    except KeyError:
+        print('Pictures not found')
+
+    return photo_data
+
 ######################################Functions##########################################################
 async def main():
     fieldnames = ['Listing ID', 'Description', 'Time_stamp']
     filename = "PrivComments.csv"
+    
+    fieldnames_pics = ['Listing_ID', 'Photo_Link']
+    filename_pics = "PrivPictures.csv"
+    
     ids = []
     semaphore = asyncio.Semaphore(500)
 
     async with aiohttp.ClientSession() as session:
-        with open(filename, 'a', newline='', encoding='utf-8-sig') as csvfile:
+        with open(filename, 'a', newline='', encoding='utf-8-sig') as csvfile, \
+             open(filename_pics, 'a', newline='', encoding='utf-8-sig') as csvfile_pics:
+            
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer_pics = csv.DictWriter(csvfile_pics, fieldnames=fieldnames_pics)
+            
             writer.writeheader()
+            writer_pics.writeheader()
+            
             start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             async def process_province(prov):
@@ -143,8 +174,16 @@ async def main():
                     try:
                         listing = await fetch(session, list_url, semaphore)
                         list_page = BeautifulSoup(listing, 'html.parser')
+                        
+                        # Extracting data and writing to the comments file
                         data = extractor(list_page, list_url)
                         writer.writerow(data)
+                        
+                        # Extracting photos and writing to the pictures file
+                        photo_data = extractor_pics(list_page, list_id)
+                        for photo in photo_data:
+                            writer_pics.writerow(photo)
+                        
                     except Exception as e:
                         print(f"An error occurred while processing ID {list_id}: {e}")
 
@@ -159,13 +198,20 @@ async def main():
 
     connection_string = "DefaultEndpointsProtocol=https;AccountName=privateproperty;AccountKey=zX/k04pby4o1V9av1a5U2E3fehg+1bo61C6cprAiPVnql+porseL1NVw6SlBBCnVaQKgxwfHjZyV+AStKg0N3A==;BlobEndpoint=https://privateproperty.blob.core.windows.net/;QueueEndpoint=https://privateproperty.queue.core.windows.net/;TableEndpoint=https://privateproperty.table.core.windows.net/;FileEndpoint=https://privateproperty.file.core.windows.net/;"
     container_name = "comments-pics"
-    blob_name = "PrivComments.csv"
-
-    blob_client = BlobClient.from_connection_string(connection_string, container_name, blob_name)
-
+    
+    # Uploading PrivComments.csv
+    blob_name_comments = "PrivComments.csv"
+    blob_client_comments = BlobClient.from_connection_string(connection_string, container_name, blob_name_comments)
     with open(filename, "rb") as data:
-        blob_client.upload_blob(data, overwrite=True)
-        print(f"File uploaded to Azure Blob Storage: {blob_name}")
+        blob_client_comments.upload_blob(data, overwrite=True)
+        print(f"File uploaded to Azure Blob Storage: {blob_name_comments}")
+
+    # Uploading PrivPictures.csv
+    blob_name_pics = "PrivPictures.csv"
+    blob_client_pics = BlobClient.from_connection_string(connection_string, container_name, blob_name_pics)
+    with open(filename_pics, "rb") as data_pics:
+        blob_client_pics.upload_blob(data_pics, overwrite=True)
+        print(f"File uploaded to Azure Blob Storage: {blob_name_pics}")
 
 # Running the main coroutine
 asyncio.run(main())
