@@ -91,7 +91,6 @@ def extractor(soup, url): # extracts from created urls
     garage = None
     parking = None
     storeys = None
-    open_park = None
 
     try:
         prop_feat_div = soup.find('div', id='property-features-list')
@@ -111,8 +110,6 @@ def extractor(soup, url): # extracts from created urls
                 garage = feat.find('span',class_='property-features__value').text.strip()
             elif '#covered-parkiung' in feat_icon:
                 parking = feat.find('span',class_='property-features__value').text.strip()
-            elif '#parking-spaces' in feat_icon:
-                open_park = feat.find('span',class_='property-features__value').text.strip()
             elif '#storeys' in feat_icon:
                 storeys = feat.find('span',class_='property-features__value').text.strip()
 
@@ -125,7 +122,6 @@ def extractor(soup, url): # extracts from created urls
         garage = None
         parking = None
         storeys = None
-        open_park = None
 
     agent_name = None
     agent_url = None
@@ -147,18 +143,19 @@ def extractor(soup, url): # extracts from created urls
         agent_name = None
         agent_url = None
 
+
     current_datetime = datetime.now().strftime('%Y-%m-%d')
 
     return {
         "Listing ID": prop_ID, "Erf Size": erfSize, "Property Type": prop_type, "Floor Size": floor_size,
         "Rates and taxes": rates, "Levies": levy, "Bedrooms": beds, "Bathrooms": baths, "Lounges": lounge,
-        "Dining": dining, "Garages": garage, "Covered Parking": parking, "Storeys": storeys, "Open Parkings":open_park, "Agent Name": agent_name,
+        "Dining": dining, "Garages": garage, "Covered Parking": parking, "Storeys": storeys, "Agent Name": agent_name,
         "Agent Url": agent_url, "Time_stamp": current_datetime}
 
 ######################################Functions##########################################################
 async def main():
     fieldnames = ['Listing ID', 'Erf Size', 'Property Type', 'Floor Size', 'Rates and taxes', 'Levies',
-                  'Bedrooms', 'Bathrooms', 'Lounges', 'Dining', 'Garages', 'Covered Parking', 'Storeys', 'Open Parkings',
+                  'Bedrooms', 'Bathrooms', 'Lounges', 'Dining', 'Garages', 'Covered Parking', 'Storeys',
                   'Agent Name', 'Agent Url', 'Time_stamp']
     filename = "PrivatePropRes(Inside).csv"
     ids = []
@@ -171,7 +168,7 @@ async def main():
             start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             async def process_province(prov):
-                response_text = await fetch(session, f"https://www.privateproperty.co.za/to-rent/mpumalanga/{prov}", semaphore)
+                response_text = await fetch(session, f"https://www.privateproperty.co.za/for-sale/mpumalanga/{prov}", semaphore)
                 home_page = BeautifulSoup(response_text, 'html.parser')
 
                 links = []
@@ -231,7 +228,7 @@ async def main():
                     if count % 1000 == 0:
                         print(f"Processed {count} IDs, sleeping for 20 seconds...")
                         await asyncio.sleep(55)
-                    list_url = f"https://www.privateproperty.co.za/to-rent/something/something/something/{list_id}"
+                    list_url = f"https://www.privateproperty.co.za/for-sale/something/something/something/{list_id}"
                     try:
                         listing = await fetch(session, list_url, semaphore)
                         list_page = BeautifulSoup(listing, 'html.parser')
@@ -250,11 +247,11 @@ async def main():
             print(f"End Time: {end_time}")
 
     connection_string = "DefaultEndpointsProtocol=https;AccountName=privateproperty;AccountKey=zX/k04pby4o1V9av1a5U2E3fehg+1bo61C6cprAiPVnql+porseL1NVw6SlBBCnVaQKgxwfHjZyV+AStKg0N3A==;BlobEndpoint=https://privateproperty.blob.core.windows.net/;QueueEndpoint=https://privateproperty.queue.core.windows.net/;TableEndpoint=https://privateproperty.table.core.windows.net/;FileEndpoint=https://privateproperty.file.core.windows.net/;"
-    container_name = "privatepropre"
+    container_name = "privateprop"
     blob_name = "PrivatePropRes(Inside).csv"
 
     blob_client = BlobClient.from_connection_string(connection_string, container_name, blob_name)
-    
+
     with open(filename, "rb") as data:
         blob_client.upload_blob(data, overwrite=True)
         print(f"File uploaded to Azure Blob Storage: {blob_name}")
