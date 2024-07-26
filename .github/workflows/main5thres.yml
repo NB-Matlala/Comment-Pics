@@ -1,10 +1,9 @@
 name: Web PrivPropRes
 
 on:
-  workflow_run:
-    workflows: ["Web PrivPropCom"]
-    types:
-      - completed
+  push:
+    branches:
+      - main
 
 jobs:
   followupRes:
@@ -31,7 +30,7 @@ jobs:
 
       - name: Run web scraping
         run: |
-          python PrivatePropRes.py 
+          python Prop24.py 
 
       - name: Archive CSV file
         uses: actions/upload-artifact@v2
