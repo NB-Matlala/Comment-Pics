@@ -79,7 +79,7 @@ async def main():
     filename_pics = "Prop24Pictures.csv"
 
     ids = []
-    semaphore = asyncio.Semaphore(500)
+    semaphore = asyncio.Semaphore(200)
 
     async with aiohttp.ClientSession() as session:
         with open(filename, 'a', newline='', encoding='utf-8-sig') as csvfile, \
