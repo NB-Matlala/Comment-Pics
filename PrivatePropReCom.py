@@ -110,7 +110,7 @@ async def main():
             start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             async def process_province(prov):
-                response_text = await fetch(session, f"https://www.privateproperty.co.za/commercial-sales/gauteng{prov}", semaphore)
+                response_text = await fetch(session, f"https://www.privateproperty.co.za/commercial-sales/gauteng/{prov}", semaphore)
                 home_page = BeautifulSoup(response_text, 'html.parser')
 
                 links = []
@@ -190,7 +190,7 @@ async def main():
                 tasks = [process_id(list_id) for list_id in ids]
                 await asyncio.gather(*tasks)
 
-            await asyncio.gather(*(process_province(prov) for prov in range(5, 11)))
+            await asyncio.gather(*(process_province(prov) for prov in range(2, 11)))
             await process_ids()
             end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             print(f"Start Time: {start_time}")
