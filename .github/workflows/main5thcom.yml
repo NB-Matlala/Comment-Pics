@@ -1,9 +1,9 @@
 name: Web PrivPropCom
 
 on:
-  schedule:
-    - cron: '30 02 * * *' # Runs at 00:30 CAT (UTC+2)
-
+  push:
+    branches:
+      - main
 
 jobs:
   Commercial:
