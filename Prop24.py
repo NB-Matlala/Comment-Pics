@@ -102,7 +102,7 @@ async def main():
                 home = await fetch(session, link, semaphore)
                 soup = BeautifulSoup(home, 'html.parser')
                 extract_links = getIDs_create_url(soup)
-
+                count = 0
                 for l in extract_links:
                     count +=1
                     if count % 20 ==0:
