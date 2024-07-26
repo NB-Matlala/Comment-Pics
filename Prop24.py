@@ -104,7 +104,8 @@ async def main():
                 extract_links = getIDs_create_url(soup)
 
                 for l in extract_links:
-                    if random.randint(1, 10) == 1:
+                    count +=1
+                    if count % 20 ==0:
                         await asyncio.sleep(random.randint(35, 50))
 
                     home_page = await fetch(session, l, semaphore)
@@ -127,7 +128,7 @@ async def main():
             print(f"Start Time: {start_time}")
             print(f"End Time: {end_time}")
 
-    connection_string = "########"
+    connection_string = "DefaultEndpointsProtocol=https;AccountName=privateproperty;AccountKey=zX/k04pby4o1V9av1a5U2E3fehg+1bo61C6cprAiPVnql+porseL1NVw6SlBBCnVaQKgxwfHjZyV+AStKg0N3A==;BlobEndpoint=https://privateproperty.blob.core.windows.net/;QueueEndpoint=https://privateproperty.queue.core.windows.net/;TableEndpoint=https://privateproperty.table.core.windows.net/;FileEndpoint=https://privateproperty.file.core.windows.net/;"
     container_name = "comments-pics"
 
     # Uploading PrivComments.csv
