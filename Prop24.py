@@ -30,7 +30,7 @@ def getIDs_create_url(soup):
     p24_results = soup.find('div', class_='p24_results')
     if p24_results:
         col_9_div = p24_results.find('div', class_='col-9')
-        if (col_9_div):
+        if col_9_div:
             tile_containers = col_9_div.find_all('div', class_='p24_tileContainer')
             for tile in tile_containers:
                 listing_number = tile.get('data-listing-number')
@@ -78,7 +78,6 @@ async def main():
     fieldnames_pics = ['Listing_ID', 'Photo_Link']
     filename_pics = "Prop24Pictures.csv"
 
-    ids = []
     semaphore = asyncio.Semaphore(200)
 
     async with aiohttp.ClientSession() as session:
@@ -104,12 +103,12 @@ async def main():
                 extract_links = getIDs_create_url(soup)
                 count = 0
                 for l in extract_links:
-                    count +=1
-                    if count % 20 ==0:
-                        await asyncio.sleep(random.randint(35, 50))
+                    count += 1
+                    if count % 20 == 0:
+                        await asyncio.sleep(50)
 
-                    home_page = await fetch(session, l, semaphore)
-                    soupex = BeautifulSoup(home_page, 'html.parser')
+                    home_ex = await fetch(session, l, semaphore)
+                    soupex = BeautifulSoup(home_ex, 'html.parser')
 
                     try:
                         comments = extractor(soupex)
@@ -121,7 +120,12 @@ async def main():
                     except Exception as e:
                         print(f"Error: {l}, {e}")
 
-            tasks = [process_page(pg) for pg in range(1, pages+1)]
+            tasks = []
+            for pg in range(1, pages + 1):
+                tasks.append(process_page(pg))
+                if pg % 10 == 0:
+                    await asyncio.sleep(60)
+
             await asyncio.gather(*tasks)
 
             end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
