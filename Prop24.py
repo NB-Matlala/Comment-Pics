@@ -73,7 +73,7 @@ home_page = session.get('https://www.property24.com/for-sale/advanced-search/res
 home_soup = BeautifulSoup(home_page.content, 'html.parser')
 pages = getPages(home_soup)
 
-connection_string = "##"
+connection_string = "DefaultEndpointsProtocol=https;AccountName=privateproperty;AccountKey=zX/k04pby4o1V9av1a5U2E3fehg+1bo61C6cprAiPVnql+porseL1NVw6SlBBCnVaQKgxwfHjZyV+AStKg0N3A==;BlobEndpoint=https://privateproperty.blob.core.windows.net/;QueueEndpoint=https://privateproperty.queue.core.windows.net/;TableEndpoint=https://privateproperty.table.core.windows.net/;FileEndpoint=https://privateproperty.file.core.windows.net/;"
 container_name = "comments-pics"
 blob_name_comments = "Prop24Comments2.csv"
 blob_name_pics = "Prop24Pictures2.csv"
