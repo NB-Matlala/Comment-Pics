@@ -86,35 +86,35 @@ def main():
         home_page = session.get('https://www.property24.com/for-sale/advanced-search/results/?sp=pid%3d5%2c6%2c9%2c7%2c8%2c1%2c14%2c2%2c3')
         home_soup = BeautifulSoup(home_page.content, 'html.parser')
         pages = getPages(home_soup)
-
+        
+        extract_links = []
         for pg in range(1, pages + 1):
             link = f"https://www.property24.com/for-sale/advanced-search/results/p{pg}?sp=pid%3d5%2c6%2c9%2c7%2c8%2c1%2c14%2c2%2c3"
             home = session.get(link)
             soup = BeautifulSoup(home.content, 'html.parser')
-            extract_links = getIDs_create_url(soup)
+            extract_links.append(getIDs_create_url(soup))
             count = 0
-            for l in extract_links:
-                count += 1
-                if count % 50 == 0:
-                    time.sleep(50)
-
-                home_ex = session.get(l)
-                soupex = BeautifulSoup(home_ex.content, 'html.parser')
-
-                try:
-                    comments = extractor(soupex)
-                    photos = extractor_pics(soupex)
-
-                    writer.writerow(comments)
-                    for photo in photos:
-                        writer_pics.writerow(photo)
-                except Exception as e:
-                    print(f"Error: {l}, {e}")
-
-            if pg % 100 == 0:
-                print("Sleeping for 60 seconds after 100 pages...")
+            if pg % 200 == 0:
+                print("Sleeping for 60 seconds after 200 pages links...")
                 time.sleep(60)
+        for l in extract_links:
+            count += 1
+            if count % 50 == 0:
+                time.sleep(35)
+                print("Sleeping extracted 50 links...")
+            home_ex = session.get(l)
+            soupex = BeautifulSoup(home_ex.content, 'html.parser')
 
+            try:
+                comments = extractor(soupex)
+                photos = extractor_pics(soupex)
+
+                writer.writerow(comments)
+                for photo in photos:
+                    writer_pics.writerow(photo)
+            except Exception as e:
+                print(f"Error: {l}, {e}")
+        
         end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         print(f"Start Time: {start_time}")
         print(f"End Time: {end_time}")
