@@ -1,4 +1,4 @@
-from requests_html import HTMLSession
+from requests_html import AsyncHTMLSession
 import re
 from bs4 import BeautifulSoup
 import json
@@ -7,6 +7,7 @@ import csv
 import math
 from datetime import datetime
 from azure.storage.blob import BlobClient
+import asyncio
 import time
 
 ######################################Functions##########################################################
@@ -63,14 +64,16 @@ def extractor_pics(soup): # extracts from created urls
     return photo_data
 
 ######################################Functions##########################################################
-def main():
+async def main():
     fieldnames = ['Listing ID', 'Description', 'Time_stamp']
-    filename = "Prop24Comments.csv"
+    filename = "Prop24Comments2.csv"
 
     fieldnames_pics = ['Listing_ID', 'Photo_Link']
-    filename_pics = "Prop24Pictures.csv"
+    filename_pics = "Prop24Pictures2.csv"
 
-    session = HTMLSession()
+    session = AsyncHTMLSession()
+
+    semaphore = asyncio.Semaphore(100)  # Adjust as necessary
 
     with open(filename, 'a', newline='', encoding='utf-8-sig') as csvfile, \
          open(filename_pics, 'a', newline='', encoding='utf-8-sig') as csvfile_pics:
@@ -83,38 +86,48 @@ def main():
 
         start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        home_page = session.get('https://www.property24.com/for-sale/advanced-search/results/?sp=pid%3d5%2c6%2c9%2c7%2c8%2c1%2c14%2c2%2c3')
+        home_page = await session.get('https://www.property24.com/for-sale/advanced-search/results/?sp=pid%3d5%2c6%2c9%2c7%2c8%2c1%2c14%2c2%2c3')
         home_soup = BeautifulSoup(home_page.content, 'html.parser')
         pages = getPages(home_soup)
-        
+
         extract_links = []
-        for pg in range(1, pages + 1):
-            link = f"https://www.property24.com/for-sale/advanced-search/results/p{pg}?sp=pid%3d5%2c6%2c9%2c7%2c8%2c1%2c14%2c2%2c3"
-            home = session.get(link)
-            soup = BeautifulSoup(home.content, 'html.parser')
-            extract_links.append(getIDs_create_url(soup))
-            count = 0
-            if pg % 200 == 0:
-                print("Sleeping for 60 seconds after 200 pages links...")
-                time.sleep(60)
+
+        async def fetch_page_links(pg):
+            async with semaphore:
+                link = f"https://www.property24.com/for-sale/advanced-search/results/p{pg}?sp=pid%3d5%2c6%2c9%2c7%2c8%2c1%2c14%2c2%2c3"
+                home = await session.get(link)
+                soup = BeautifulSoup(home.content, 'html.parser')
+                extract_links.extend(getIDs_create_url(soup))
+                if pg % 200 == 0:
+                    print("Sleeping for 60 seconds after 200 pages links...")
+                    await asyncio.sleep(60)
+
+        await asyncio.gather(*(fetch_page_links(pg) for pg in range(1, pages + 1)))
+
+        async def fetch_link_data(link):
+            async with semaphore:
+                try:
+                    home_ex = await session.get(link)
+                    soupex = BeautifulSoup(home_ex.content, 'html.parser')
+                    comments = extractor(soupex)
+                    photos = extractor_pics(soupex)
+                    writer.writerow(comments)
+                    for photo in photos:
+                        writer_pics.writerow(photo)
+                except Exception as e:
+                    print(f"Error: {link}, {e}")
+
+        tasks = []
+        count = 0
         for l in extract_links:
+            tasks.append(fetch_link_data(l))
             count += 1
             if count % 50 == 0:
-                time.sleep(35)
                 print("Sleeping extracted 50 links...")
-            home_ex = session.get(l)
-            soupex = BeautifulSoup(home_ex.content, 'html.parser')
+                await asyncio.sleep(35)
 
-            try:
-                comments = extractor(soupex)
-                photos = extractor_pics(soupex)
+        await asyncio.gather(*tasks)
 
-                writer.writerow(comments)
-                for photo in photos:
-                    writer_pics.writerow(photo)
-            except Exception as e:
-                print(f"Error: {l}, {e}")
-        
         end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         print(f"Start Time: {start_time}")
         print(f"End Time: {end_time}")
@@ -122,19 +135,19 @@ def main():
     connection_string = "DefaultEndpointsProtocol=https;AccountName=privateproperty;AccountKey=zX/k04pby4o1V9av1a5U2E3fehg+1bo61C6cprAiPVnql+porseL1NVw6SlBBCnVaQKgxwfHjZyV+AStKg0N3A==;BlobEndpoint=https://privateproperty.blob.core.windows.net/;QueueEndpoint=https://privateproperty.queue.core.windows.net/;TableEndpoint=https://privateproperty.table.core.windows.net/;FileEndpoint=https://privateproperty.file.core.windows.net/;"
     container_name = "comments-pics"
 
-    # Uploading PrivComments.csv
-    blob_name_comments = "Prop24Comments.csv"
+    # Uploading Prop24Comments.csv
+    blob_name_comments = "Prop24Comments2.csv"
     blob_client_comments = BlobClient.from_connection_string(connection_string, container_name, blob_name_comments)
     with open(filename, "rb") as data:
         blob_client_comments.upload_blob(data, overwrite=True)
         print(f"File uploaded to Azure Blob Storage: {blob_name_comments}")
 
-    # Uploading PrivPictures.csv
-    blob_name_pics = "Prop24Pictures.csv"
+    # Uploading Prop24Pictures.csv
+    blob_name_pics = "Prop24Pictures2.csv"
     blob_client_pics = BlobClient.from_connection_string(connection_string, container_name, blob_name_pics)
     with open(filename_pics, "rb") as data_pics:
         blob_client_pics.upload_blob(data_pics, overwrite=True)
         print(f"File uploaded to Azure Blob Storage: {blob_name_pics}")
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
