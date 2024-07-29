@@ -1,5 +1,4 @@
-import aiohttp
-import asyncio
+from requests_html import HTMLSession
 import re
 from bs4 import BeautifulSoup
 import json
@@ -8,16 +7,12 @@ import csv
 import math
 from datetime import datetime
 from azure.storage.blob import BlobClient
-
-async def fetch(session, url, semaphore):
-    async with semaphore:
-        async with session.get(url) as response:
-            return await response.text()
+import time
 
 ######################################Functions##########################################################
 def getPages(soup):
     try:
-        num_listings = soup.find('div',class_='pull-right').find_all('span', class_='p24_bold')
+        num_listings = soup.find('div', class_='pull-right').find_all('span', class_='p24_bold')
         num_pgV = num_listings[-1].text.strip()
         pages = math.ceil(int(num_pgV) / 20)
         return pages
@@ -37,15 +32,12 @@ def getIDs_create_url(soup):
                 if listing_number:
                     listing_number = listing_number.replace('P', '')
                     thread_data.append(listing_number)
-    #create Url
-    links = []
-    for i in thread_data:
-        links.append(f"https://www.property24.com/for-sale/langebaan-country-estate/langebaan/western-cape/10483/{i}?")
-
+    # Create URLs
+    links = [f"https://www.property24.com/for-sale/langebaan-country-estate/langebaan/western-cape/10483/{i}?" for i in thread_data]
     return links
 
 def extractor(soup): # extracts from created urls
-    listing_id = soup.find('div',class_='p24_listing p24_regularListing').get('data-listingnumber')
+    listing_id = soup.find('div', class_='p24_listing p24_regularListing').get('data-listingnumber')
     try:
         comment_24 = soup.find('div', class_='js_expandedText p24_expandedText hide')
         prop_desc = ' '.join(comment_24.stripped_strings)
@@ -58,10 +50,10 @@ def extractor(soup): # extracts from created urls
         "Listing ID": listing_id, "Description": prop_desc, "Time_stamp": current_datetime}
 
 def extractor_pics(soup): # extracts from created urls
-    listing_id = soup.find('div',class_='p24_listing p24_regularListing').get('data-listingnumber')
+    listing_id = soup.find('div', class_='p24_listing p24_regularListing').get('data-listingnumber')
     photo_data = []
     try:
-        photogrid_div = soup.find('div',class_='p24_mediaHolder hide').find('div',class_='p24_thumbnailContainer').find_all('div',class_='col-4 p24_galleryThumbnail')
+        photogrid_div = soup.find('div', class_='p24_mediaHolder hide').find('div', class_='p24_thumbnailContainer').find_all('div', class_='col-4 p24_galleryThumbnail')
         if photogrid_div:
             for x in photogrid_div:
                 photo_url = x.find('img').get('lazy-src')
@@ -71,66 +63,61 @@ def extractor_pics(soup): # extracts from created urls
     return photo_data
 
 ######################################Functions##########################################################
-async def main():
+def main():
     fieldnames = ['Listing ID', 'Description', 'Time_stamp']
     filename = "Prop24Comments.csv"
 
     fieldnames_pics = ['Listing_ID', 'Photo_Link']
     filename_pics = "Prop24Pictures.csv"
 
-    semaphore = asyncio.Semaphore(200)
+    session = HTMLSession()
 
-    async with aiohttp.ClientSession() as session:
-        with open(filename, 'a', newline='', encoding='utf-8-sig') as csvfile, \
-             open(filename_pics, 'a', newline='', encoding='utf-8-sig') as csvfile_pics:
+    with open(filename, 'a', newline='', encoding='utf-8-sig') as csvfile, \
+         open(filename_pics, 'a', newline='', encoding='utf-8-sig') as csvfile_pics:
 
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer_pics = csv.DictWriter(csvfile_pics, fieldnames=fieldnames_pics)
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer_pics = csv.DictWriter(csvfile_pics, fieldnames=fieldnames_pics)
 
-            writer.writeheader()
-            writer_pics.writeheader()
+        writer.writeheader()
+        writer_pics.writeheader()
 
-            start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            home_page = await fetch(session, 'https://www.property24.com/for-sale/advanced-search/results/?sp=pid%3d5%2c6%2c9%2c7%2c8%2c1%2c14%2c2%2c3', semaphore)
-            home_soup = BeautifulSoup(home_page, 'html.parser')
-            pages = getPages(home_soup)
+        home_page = session.get('https://www.property24.com/for-sale/advanced-search/results/?sp=pid%3d5%2c6%2c9%2c7%2c8%2c1%2c14%2c2%2c3')
+        home_soup = BeautifulSoup(home_page.content, 'html.parser')
+        pages = getPages(home_soup)
 
-            async def process_page(pg):
-                link = f"https://www.property24.com/for-sale/advanced-search/results/p{pg}?sp=pid%3d5%2c6%2c9%2c7%2c8%2c1%2c14%2c2%2c3"
-                home = await fetch(session, link, semaphore)
-                soup = BeautifulSoup(home, 'html.parser')
-                extract_links = getIDs_create_url(soup)
-                count = 0
-                for l in extract_links:
-                    count += 1
-                    if count % 20 == 0:
-                        await asyncio.sleep(50)
+        for pg in range(1, pages + 1):
+            link = f"https://www.property24.com/for-sale/advanced-search/results/p{pg}?sp=pid%3d5%2c6%2c9%2c7%2c8%2c1%2c14%2c2%2c3"
+            home = session.get(link)
+            soup = BeautifulSoup(home.content, 'html.parser')
+            extract_links = getIDs_create_url(soup)
+            count = 0
+            for l in extract_links:
+                count += 1
+                if count % 50 == 0:
+                    time.sleep(50)
 
-                    home_ex = await fetch(session, l, semaphore)
-                    soupex = BeautifulSoup(home_ex, 'html.parser')
+                home_ex = session.get(l)
+                soupex = BeautifulSoup(home_ex.content, 'html.parser')
 
-                    try:
-                        comments = extractor(soupex)
-                        photos = extractor_pics(soupex)
+                try:
+                    comments = extractor(soupex)
+                    photos = extractor_pics(soupex)
 
-                        writer.writerow(comments)
-                        for photo in photos:
-                            writer_pics.writerow(photo)
-                    except Exception as e:
-                        print(f"Error: {l}, {e}")
+                    writer.writerow(comments)
+                    for photo in photos:
+                        writer_pics.writerow(photo)
+                except Exception as e:
+                    print(f"Error: {l}, {e}")
 
-            tasks = []
-            for pg in range(1, pages + 1):
-                tasks.append(process_page(pg))
-                if pg % 10 == 0:
-                    await asyncio.sleep(60)
+            if pg % 100 == 0:
+                print("Sleeping for 60 seconds after 100 pages...")
+                time.sleep(60)
 
-            await asyncio.gather(*tasks)
-
-            end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print(f"Start Time: {start_time}")
-            print(f"End Time: {end_time}")
+        end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print(f"Start Time: {start_time}")
+        print(f"End Time: {end_time}")
 
     connection_string = "DefaultEndpointsProtocol=https;AccountName=privateproperty;AccountKey=zX/k04pby4o1V9av1a5U2E3fehg+1bo61C6cprAiPVnql+porseL1NVw6SlBBCnVaQKgxwfHjZyV+AStKg0N3A==;BlobEndpoint=https://privateproperty.blob.core.windows.net/;QueueEndpoint=https://privateproperty.queue.core.windows.net/;TableEndpoint=https://privateproperty.table.core.windows.net/;FileEndpoint=https://privateproperty.file.core.windows.net/;"
     container_name = "comments-pics"
@@ -149,5 +136,5 @@ async def main():
         blob_client_pics.upload_blob(data_pics, overwrite=True)
         print(f"File uploaded to Azure Blob Storage: {blob_name_pics}")
 
-# Run the main function
-asyncio.run(main())
+if __name__ == "__main__":
+    main()
