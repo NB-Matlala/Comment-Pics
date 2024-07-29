@@ -70,7 +70,8 @@ async def main():
 
     fieldnames_pics = ['Listing_ID', 'Photo_Link']
     filename_pics = "Prop24Pictures2.csv"
-
+    extract_links = []
+    
     session = AsyncHTMLSession()
 
     semaphore = asyncio.Semaphore(100)  # Adjust as necessary
@@ -90,7 +91,6 @@ async def main():
         home_soup = BeautifulSoup(home_page.content, 'html.parser')
         pages = getPages(home_soup)
 
-        extract_links = []
 
         async def fetch_page_links(pg):
             async with semaphore:
