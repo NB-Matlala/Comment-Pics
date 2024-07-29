@@ -122,9 +122,9 @@ async def main():
         for l in extract_links:
             tasks.append(fetch_link_data(l))
             count += 1
-            if count % 50 == 0:
+            if count % 20 == 0:
                 print("Sleeping extracted 50 links...")
-                await asyncio.sleep(55)
+                await asyncio.sleep(15)
 
         await asyncio.gather(*tasks)
 
