@@ -18,7 +18,7 @@ def getPages(soup):
         pages = math.ceil(int(num_pgV) / 20)
         return pages
     except (ValueError, AttributeError) as e:
-        print(f"Failed to parse number of pages for URL: {url} - {e}")
+        print(f"Failed to parse number of pages for URL - {e}")
         return 0
 
 def getIDs_create_url(soup):
@@ -64,7 +64,7 @@ def extractor_pics(soup): # extracts from created urls
 
 def append_to_blob_and_reset(local_file, blob_client, fieldnames):
     with open(local_file, "rb") as data:
-        blob_client.append_block(data.read())
+        blob_client.upload_blob(data, overwrite=True)
     with open(local_file, 'w', newline='', encoding='utf-8-sig') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
@@ -75,17 +75,17 @@ pages = getPages(home_soup)
 
 connection_string = "DefaultEndpointsProtocol=https;AccountName=privateproperty;AccountKey=zX/k04pby4o1V9av1a5U2E3fehg+1bo61C6cprAiPVnql+porseL1NVw6SlBBCnVaQKgxwfHjZyV+AStKg0N3A==;BlobEndpoint=https://privateproperty.blob.core.windows.net/;QueueEndpoint=https://privateproperty.queue.core.windows.net/;TableEndpoint=https://privateproperty.table.core.windows.net/;FileEndpoint=https://privateproperty.file.core.windows.net/;"
 container_name = "comments-pics"
-blob_name_comments = "Prop24Comments2.csv"
-blob_name_pics = "Prop24Pictures2.csv"
+blob_name_comments = "Prop24Comments.csv"
+blob_name_pics = "Prop24Pictures.csv"
 
 blob_client_comments = BlobClient.from_connection_string(connection_string, container_name, blob_name_comments)
 blob_client_pics = BlobClient.from_connection_string(connection_string, container_name, blob_name_pics)
 
 fieldnames_comments = ['Listing ID', 'Description', 'Time_stamp']
-filename_comments = "Prop24Comments2.csv"
+filename_comments = "Prop24Comments.csv"
 
 fieldnames_pics = ['Listing_ID', 'Photo_Link']
-filename_pics = "Prop24Pictures2.csv"
+filename_pics = "Prop24Pictures.csv"
 
 with open(filename_comments, 'w', newline='', encoding='utf-8-sig') as csvfile_comments, \
      open(filename_pics, 'w', newline='', encoding='utf-8-sig') as csvfile_pics:
@@ -103,34 +103,33 @@ with open(filename_comments, 'w', newline='', encoding='utf-8-sig') as csvfile_c
         home = session.get(link)
         soup = BeautifulSoup(home.content, 'html.parser')
         extract_links = getIDs_create_url(soup)
+
+        for l in extract_links:
+            count += 1
+            if count % 10 == 0:
+                sleep_duration = random.randint(35, 50)
+                time.sleep(sleep_duration)
+
+            home_page = session.get(l)
+            soupex = BeautifulSoup(home_page.content, 'html.parser')
+            try:
+                comments = extractor(soupex)
+                photos = extractor_pics(soupex)
+
+                writer_comments.writerow(comments)
+                for photo in photos:
+                    writer_pics.writerow(photo)
+                
+                if count % 2000 == 0:
+                    append_to_blob_and_reset(filename_comments, blob_client_comments, fieldnames_comments)
+                    append_to_blob_and_reset(filename_pics, blob_client_pics, fieldnames_pics)
+
+            except Exception as e:
+                print(f"Error: {l}, {e}")
+
         if pg % 200 == 0:
             print("Sleeping for 60 seconds after processing 200 pages...")
             time.sleep(60)
-
-    print(f"links extracted: {len(extract_links)}")
-    for l in extract_links:
-        count += 1
-        if count % 10 == 0:
-            sleep_duration = random.randint(35, 50)
-            time.sleep(sleep_duration)
-
-        home_page = session.get(l)
-        soupex = BeautifulSoup(home_page.content, 'html.parser')
-        try:
-            comments = extractor(soupex)
-            photos = extractor_pics(soupex)
-
-            writer_comments.writerow(comments)
-            for photo in photos:
-                writer_pics.writerow(photo)
-            
-            if count % 2000 == 0:
-                append_to_blob_and_reset(filename_comments, blob_client_comments, fieldnames_comments)
-                append_to_blob_and_reset(filename_pics, blob_client_pics, fieldnames_pics)
-
-        except Exception as e:
-            print(f"Error: {l}, {e}")
-
 
     # Append remaining data at the end
     append_to_blob_and_reset(filename_comments, blob_client_comments, fieldnames_comments)
