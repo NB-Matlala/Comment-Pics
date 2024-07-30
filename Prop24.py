@@ -97,7 +97,7 @@ with open(filename_comments, 'w', newline='', encoding='utf-8-sig') as csvfile_c
     writer_pics.writeheader()
 
     count = 0
-
+    extract_links = []
     for pg in range(start_page, pages + 1):
         link = f"https://www.property24.com/for-sale/advanced-search/results/p{pg}?sp=pid%3d5%2c6%2c9%2c7%2c8%2c1%2c14%2c2%2c3"
         home = session.get(link)
