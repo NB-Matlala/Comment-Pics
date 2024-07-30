@@ -102,34 +102,34 @@ with open(filename_comments, 'w', newline='', encoding='utf-8-sig') as csvfile_c
         link = f"https://www.property24.com/for-sale/advanced-search/results/p{pg}?sp=pid%3d5%2c6%2c9%2c7%2c8%2c1%2c14%2c2%2c3"
         home = session.get(link)
         soup = BeautifulSoup(home.content, 'html.parser')
-        extract_links = getIDs_create_url(soup)
-
-        for l in extract_links:
-            count += 1
-            if count % 10 == 0:
-                sleep_duration = random.randint(35, 50)
-                time.sleep(sleep_duration)
-
-            home_page = session.get(l)
-            soupex = BeautifulSoup(home_page.content, 'html.parser')
-            try:
-                comments = extractor(soupex)
-                photos = extractor_pics(soupex)
-
-                writer_comments.writerow(comments)
-                for photo in photos:
-                    writer_pics.writerow(photo)
-                
-                if count % 2000 == 0:
-                    append_to_blob_and_reset(filename_comments, blob_client_comments, fieldnames_comments)
-                    append_to_blob_and_reset(filename_pics, blob_client_pics, fieldnames_pics)
-
-            except Exception as e:
-                print(f"Error: {l}, {e}")
-
+        extract_links.extend(getIDs_create_url(soup))
         if pg % 200 == 0:
             print("Sleeping for 60 seconds after processing 200 pages...")
             time.sleep(60)
+
+    for l in extract_links:
+        count += 1
+        if count % 10 == 0:
+            sleep_duration = random.randint(35, 50)
+            time.sleep(sleep_duration)
+
+        home_page = session.get(l)
+        soupex = BeautifulSoup(home_page.content, 'html.parser')
+        try:
+            comments = extractor(soupex)
+            photos = extractor_pics(soupex)
+
+            writer_comments.writerow(comments)
+            for photo in photos:
+                writer_pics.writerow(photo)
+            
+            if count % 2000 == 0:
+                append_to_blob_and_reset(filename_comments, blob_client_comments, fieldnames_comments)
+                append_to_blob_and_reset(filename_pics, blob_client_pics, fieldnames_pics)
+
+        except Exception as e:
+            print(f"Error: {l}, {e}")
+
 
     # Append remaining data at the end
     append_to_blob_and_reset(filename_comments, blob_client_comments, fieldnames_comments)
