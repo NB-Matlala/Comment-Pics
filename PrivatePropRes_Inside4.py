@@ -78,9 +78,13 @@ def extractor_pics(soup, prop_id): # extracts from created urls
             # Extract all mediumUrl urls
             photo_urls = [item['mediumUrl'] for item in photos]
         
-            # Store the extracted URLs with the listing ID
+            # Store the extracted URLs with the listing ID            
+            count = 0
             for url in photo_urls:
+                count +=1
                 photo_data.append({'Listing_ID': prop_id, 'Photo_Link': url})
+                if count ==8:
+                    break;
     except KeyError:
         print('Pictures not found')
 
