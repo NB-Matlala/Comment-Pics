@@ -1,6 +1,9 @@
-name: Web PrivPropRes(Inside)4
+name: Web PrivPropRes(Inside)4_1
 
 on:
+  # push:
+  #   branches:
+  #     - main
   workflow_run:
     workflows: ["Web PrivPropRes(Inside)2"]
     types:
@@ -9,6 +12,7 @@ on:
 jobs:
   followupjob3:
     runs-on: ubuntu-latest
+    concurrency: multirunP1
 
     steps:
       - name: Checkout code
@@ -31,10 +35,5 @@ jobs:
 
       - name: Run web scraping
         run: |
-          python PrivatePropRes_Inside4.py 
+          python PrivatePropRes_Inside4_1.py
 
-      - name: Archive CSV file
-        uses: actions/upload-artifact@v2
-        with:
-          name: PrivatePropRes(Inside)4.csv
-          path: PrivatePropRes(Inside)4.csv
