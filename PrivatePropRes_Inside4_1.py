@@ -93,10 +93,10 @@ def extractor_pics(soup, prop_id): # extracts from created urls
 ######################################Functions##########################################################
 async def main():
     fieldnames = ['Listing ID', 'Description', 'Time_stamp']
-    filename = "PrivComments4.csv"
+    filename = "PrivComments4_1.csv"
     
     fieldnames_pics = ['Listing_ID', 'Photo_Link']
-    filename_pics = "PrivPictures4.csv"
+    filename_pics = "PrivPictures4_1.csv"
     
     ids = []
     semaphore = asyncio.Semaphore(500)
@@ -114,33 +114,22 @@ async def main():
             start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             async def process_province(prov):
-                response_text = await fetch(session, f"https://www.privateproperty.co.za/for-sale/mpumalanga/{prov}", semaphore)
+                response_text = await fetch(session, prov, semaphore)
                 home_page = BeautifulSoup(response_text, 'html.parser')
-
-                links = []
-                ul = home_page.find('ul', class_='region-content-holder__unordered-list')
-                li_items = ul.find_all('li')
-                for area in li_items:
-                    link = area.find('a')
-                    link = f"https://www.privateproperty.co.za{link.get('href')}"
-                    links.append(link)
-
                 new_links = []
-                for l in links:
-                    try:
-                        res_in_text = await fetch(session, f"{l}", semaphore)
-                        inner = BeautifulSoup(res_in_text, 'html.parser')
-                        ul2 = inner.find('ul', class_='region-content-holder__unordered-list')
-                        if ul2:
-                            li_items2 = ul2.find_all('li', class_='region-content-holder__list')
-                            for area2 in li_items2:
-                                link2 = area2.find('a')
-                                link2 = f"https://www.privateproperty.co.za{link2.get('href')}"
-                                new_links.append(link2)
-                        else:
-                            new_links.append(l)
-                    except aiohttp.ClientError as e:
-                        print(f"Request failed for {l}: {e}")
+                try:
+                    inner = home_page
+                    ul2 = inner.find('ul', class_='region-content-holder__unordered-list')
+                    if ul2:
+                        li_items2 = ul2.find_all('li', class_='region-content-holder__list')
+                        for area2 in li_items2:
+                            link2 = area2.find('a')
+                            link2 = f"https://www.privateproperty.co.za{link2.get('href')}"
+                            new_links.append(link2)
+                    else:
+                        new_links.append(prov)
+                except aiohttp.ClientError as e:
+                    print(f"Request failed for {prov}: {e}")
 
                 async def process_link(x):
                     try:
@@ -150,7 +139,7 @@ async def main():
 
                         for s in range(1, num_pages + 1):
                             if s % 10 == 0:
-                                sleep_duration = random.randint(10, 15)
+                                sleep_duration = random.randint(15, 25)
                                 await asyncio.sleep(sleep_duration)
 
                             prop_page_text = await fetch(session, f"{x}?page={s}", semaphore)
@@ -173,7 +162,7 @@ async def main():
                     count += 1
                     if count % 1000 == 0:
                         print(f"Processed {count} IDs, sleeping for 20 seconds...")
-                        await asyncio.sleep(55)
+                        await asyncio.sleep(35)
                     list_url = f"https://www.privateproperty.co.za/for-sale/something/something/something/{list_id}"
                     try:
                         listing = await fetch(session, list_url, semaphore)
@@ -194,7 +183,9 @@ async def main():
                 tasks = [process_id(list_id) for list_id in ids]
                 await asyncio.gather(*tasks)
 
-            await asyncio.gather(*(process_province(prov) for prov in range(3, 4)))
+            gp_links = ['https://www.privateproperty.co.za/for-sale/gauteng/johannesburg/33',
+                        'https://www.privateproperty.co.za/for-sale/gauteng/midrand/24']
+            await asyncio.gather(*(process_province(prov) for prov in gp_links))
             await process_ids()
             end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             print(f"Start Time: {start_time}")
@@ -204,14 +195,14 @@ async def main():
     container_name = "comments-pics"
     
     # Uploading PrivComments.csv
-    blob_name_comments = "PrivComments4.csv"
+    blob_name_comments = "PrivComments4_1.csv"
     blob_client_comments = BlobClient.from_connection_string(connection_string, container_name, blob_name_comments)
     with open(filename, "rb") as data:
         blob_client_comments.upload_blob(data, overwrite=True)
         print(f"File uploaded to Azure Blob Storage: {blob_name_comments}")
 
     # Uploading PrivPictures.csv
-    blob_name_pics = "PrivPictures4.csv"
+    blob_name_pics = "PrivPictures4_1.csv"
     blob_client_pics = BlobClient.from_connection_string(connection_string, container_name, blob_name_pics)
     with open(filename_pics, "rb") as data_pics:
         blob_client_pics.upload_blob(data_pics, overwrite=True)
@@ -219,3 +210,4 @@ async def main():
 
 # Running the main coroutine
 asyncio.run(main())
+
