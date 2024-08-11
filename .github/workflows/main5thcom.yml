@@ -2,7 +2,9 @@ name: Web PrivPropCom
 
 on:
   schedule:
-    - cron: '35 03 * * *' # Runs at 00:30 CAT (UTC+2)
+    - cron: '00 11 * * *' # Runs at 00:30 CAT (UTC+2)
+    # - cron: '35 03 * * *' # Runs at 00:30 CAT (UTC+2)
+    
 jobs:
   Commercial:
     runs-on: ubuntu-latest
