@@ -2,7 +2,9 @@ name: Web PrivPropRes(Inside)3
 
 on:
   schedule:
-    - cron: '35 02 * * *' # Runs at 00:30 CAT (UTC+2)
+    # - cron: '35 02 * * *' # Runs at 00:30 CAT (UTC+2)
+    - cron: '55 11 * * *' # Runs at 00:30 CAT (UTC+2)
+
 jobs:
   scrapeinside3:
     runs-on: ubuntu-latest
