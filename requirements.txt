@@ -1,6 +1,5 @@
 requests-html
 requests
-pyppeteer
 pyquery
 beautifulsoup4
 random2
@@ -9,3 +8,4 @@ aiohttp
 azure-storage-blob
 lxml[html_clean]
 pandas
+uvloop
