@@ -173,7 +173,7 @@ async def main():
                 async def process_id(list_id):
                     nonlocal count
                     count += 1
-                    if count % 1000 == 0:
+                    if count % 10000 == 0:
                         print(f"Processed {count} IDs, sleeping for 20 seconds...")
                         await asyncio.sleep(55)
                     list_url = f"https://www.privateproperty.co.za/commercial-sales/something/something/something/{list_id}"
@@ -202,22 +202,23 @@ async def main():
             print(f"Start Time: {start_time}")
             print(f"End Time: {end_time}")
 
-    connection_string = "##"
-    container_name = "comments-pics"
+    # connection_string = "##"
+    # container_name = "comments-pics"
 
-    # Uploading PrivComments.csv
-    blob_name_comments = "PrivComments50.csv"
-    blob_client_comments = BlobClient.from_connection_string(connection_string, container_name, blob_name_comments)
-    with open(filename, "rb") as data:
-        blob_client_comments.upload_blob(data, overwrite=True)
-        print(f"File uploaded to Azure Blob Storage: {blob_name_comments}")
+    # # Uploading PrivComments.csv
+    # blob_name_comments = "PrivComments50.csv"
+    # blob_client_comments = BlobClient.from_connection_string(connection_string, container_name, blob_name_comments)
+    # with open(filename, "rb") as data:
+    #     blob_client_comments.upload_blob(data, overwrite=True)
+    #     print(f"File uploaded to Azure Blob Storage: {blob_name_comments}")
 
     # Uploading PrivPictures.csv
-    blob_name_pics = "PrivPictures50.csv"
-    blob_client_pics = BlobClient.from_connection_string(connection_string, container_name, blob_name_pics)
-    with open(filename_pics, "rb") as data_pics:
-        blob_client_pics.upload_blob(data_pics, overwrite=True)
-        print(f"File uploaded to Azure Blob Storage: {blob_name_pics}")
+    print("Code Done...")
+    # blob_name_pics = "PrivPictures50.csv"
+    # blob_client_pics = BlobClient.from_connection_string(connection_string, container_name, blob_name_pics)
+    # with open(filename_pics, "rb") as data_pics:
+    #     blob_client_pics.upload_blob(data_pics, overwrite=True)
+    #     print(f"File uploaded to Azure Blob Storage: {blob_name_pics}")
 
 # Running the main coroutine
 asyncio.run(main())
