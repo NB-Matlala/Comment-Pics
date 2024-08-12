@@ -175,7 +175,7 @@ async def main():
                     count += 1
                     if count % 10000 == 0:
                         print(f"Processed {count} IDs, sleeping for 20 seconds...")
-                        await asyncio.sleep(35)
+                        await asyncio.sleep(25)
                     list_url = f"https://www.privateproperty.co.za/commercial-sales/something/something/something/{list_id}"
                     try:
                         listing = await fetch(session, list_url, semaphore)
