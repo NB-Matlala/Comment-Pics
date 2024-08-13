@@ -1,7 +1,7 @@
 module github.com/NB-Matlala/Comment-Pics
 
-go 1.20
+go 1.22
 
 require (
-    github.com/gocolly/colly v2
+    github.com/gocolly/colly v2.0.0
 )
