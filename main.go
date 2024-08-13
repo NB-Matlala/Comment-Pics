@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 
-	"github.com/gocolly/colly"
+	"github.com/gocolly/colly/v2"
 )
 
 type Property struct {
