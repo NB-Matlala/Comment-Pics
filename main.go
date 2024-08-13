@@ -118,7 +118,8 @@ func main() {
 	for _, listID := range ids {
 		listURL := fmt.Sprintf("https://www.privateproperty.co.za/for-sale/something/something/something/%s", listID)
 		c.OnHTML("html", func(e *colly.HTMLElement) {
-			property := extractor(e.DOM.Html())
+			htmlContent := e.DOM.Html() // Fetch HTML content as string
+			property := extractor(htmlContent)
 			fmt.Println(property)
 		})
 		c.Visit(listURL)
