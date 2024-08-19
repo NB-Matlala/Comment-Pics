@@ -1,153 +1,227 @@
-import requests
 from bs4 import BeautifulSoup
-import pandas as pd
-import threading
+from requests_html import HTMLSession
+import re
+import math
+import json
 import time
+import threading
+from queue import Queue
 from datetime import datetime
+import csv
 from azure.storage.blob import BlobClient
 
-print("Buy inside code running......................")
+session = HTMLSession()
 
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36',
-    'Accept-Language': 'en-US,en;q=0.5'
-}
+# Thread worker function
+def worker(queue, results):
+    while True:
+        item = queue.get()
+        if item is None:
+            break
+        url = item.get("url")
+        extract_function = item.get("extract_function")
+        try:
+            response = session.get(url)
+            soup = BeautifulSoup(response.content, 'html.parser')
+            result = extract_function(soup, url)
+            if result:
+                results.append(result)
+        except Exception as e:
+            print(f"Request failed for {url}: {e}")
+        finally:
+            queue.task_done()
 
-start_page = 9700
-last_page = 10800
-pages_per_batch = 101
-thread_data = []
-failed_pages = []  # List to store failed pages
-tile_urls_with_fake_class = []
-lock = threading.Lock()
-
-def scrape_page(url, page):
+def getPages(soupPage, url):
     try:
-        response = requests.get(url, headers=headers, timeout=70)
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.text, 'html.parser')
+        num_pg = soupPage.find('div', class_='listing-results-layout__mobile-item-count txt-small-regular')
+        num_pgV = num_pg.text.split('of ')[-1]
+        num_pgV = num_pgV.replace('\xa0', '').replace(' results', '')
+        pages = math.ceil(int(num_pgV) / 20)
+        return pages
+    except (ValueError, AttributeError) as e:
+        print(f"Failed to parse number of pages for URL: {url} - {e}")
+        return 0
 
-            # Find all <style> tags with type="text/css"
-            style_tags = soup.find_all('style', type='text/css')
-
-            # Extract class names used for fake listings
-            fake_class_names = []
-            for style_tag in style_tags:
-                style_content = style_tag.text.strip()
-                for line in style_content.splitlines():
-                    line = line.strip()
-                    if line.startswith('.'):
-                        class_name = line.split('{')[0].strip()[1:]
-                        fake_class_names.append(class_name)
-                        break
-
-            p24_results = soup.find('div', class_='p24_results')
-            if p24_results:
-                col_9_div = p24_results.find('div', class_='col-9')
-                if col_9_div:
-                    tile_containers = col_9_div.find_all('div', class_='p24_tileContainer')
-                    for tile in tile_containers:
-                        a_tag = tile.find('a', href=True)
-                        url = a_tag['href'] if a_tag else None
-                        if url:
-                            listing_number = "https://www.property24.com" + url
-                            with lock:
-                                if any(cls in tile['class'] for cls in fake_class_names):
-                                    tile_urls_with_fake_class.append(listing_number)
-                                else:
-                                    thread_data.append(listing_number)
-        else:
-            with lock:
-                failed_pages.append(page)
-    except Exception as e:
-        with lock:
-            failed_pages.append(page)
-
-def scrape_batch(start, end):
-    threads = []
-    for page in range(start, end + 1):
-        url = f"https://www.property24.com/for-sale/advanced-search/results/p{page}?sp=pid%3d8%2c2%2c3%2c14%2c5%2c1%2c6%2c9%2c7%26so%3dNewest&PropertyCategory=House%2cApartmentOrFlat%2cTownhouse%2cVacantLandOrPlot%2cFarm%2cCommercial%2cIndustrial"
-        thread = threading.Thread(target=scrape_page, args=(url, page))
-        threads.append(thread)
-        thread.start()
-    
-    for thread in threads:
-        thread.join()
-
-def main():
-    for start in range(start_page, last_page + 1, pages_per_batch):
-        end = min(start + pages_per_batch - 1, last_page)
-        scrape_batch(start, end)
-        if end < last_page:
-            time.sleep(60)
-    
-    # Retry failed pages
-    if failed_pages:
-        failed_pages.sort()
-        print(f"Re-scraping failed pages: {failed_pages}")
-        scrape_batch(min(failed_pages), max(failed_pages))
-    
-    global thread_data
-    thread_data = list(set(thread_data))
-    
-    # Save data to CSV
-    pd.DataFrame(thread_data).to_csv('property_listingsIDs.csv', encoding='utf-8', index=False)
-    pd.DataFrame(tile_urls_with_fake_class, columns=['URLs']).to_csv('property_listingsfakeads.csv', encoding='utf-8', index=False)
-
-def extract_property_details(listing_id):
-    url = listing_id
+def extractor(soup, url):
     try:
-        response = requests.get(url, headers=headers, timeout=70)
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.text, 'html.parser')
+        prop_ID = None
+        erfSize = None
+        floor_size = None
+        rates = None
+        levy = None
 
-            listing_id = soup.find('div', class_='p24_listing p24_regularListing').get('data-listingnumber')
-            photo_data = []
-            try:
-                photogrid_div = soup.find('div', class_='p24_mediaHolder hide').find('div', class_='p24_thumbnailContainer').find_all('div', class_='col-4 p24_galleryThumbnail')
-                for x in photogrid_div[:8]:
-                    photo_url = x.find('img').get('lazy-src')
-                    photo_data.append({'Listing_ID': listing_id, 'Photo_Link': photo_url})
-            except:
-                print(f"No picture div found: {listing_id}")
+        prop_div = soup.find('div', class_='property-features')
+        lists = prop_div.find('ul', class_='property-features__list')
+        features = lists.find_all('li')
+        for feature in features:
+            icon = feature.find('svg').find('use').get('xlink:href')
+            if '#listing-alt' in icon:
+                prop_ID = feature.find('span', class_='property-features__value').text.strip()
+            elif '#property-type' in icon:
+                prop_type = feature.find('span', class_='property-features__value').text.strip()
+            elif '#erf-size' in icon:
+                erfSize = feature.find('span', class_='property-features__value').text.strip()
+                erfSize = erfSize.replace('\xa0', ' ')
+            elif '#property-size' in icon:
+                floor_size = feature.find('span', class_='property-features__value').text.strip()
+                floor_size = floor_size.replace('\xa0', ' ')
+            elif '#rates' in icon:
+                rates = feature.find('span', class_='property-features__value').text.strip()
+                rates = rates.replace('\xa0', ' ')
+            elif '#levies' in icon:
+                levy = feature.find('span', class_='property-features__value').text.strip()
+                levy = levy.replace('\xa0', ' ')
 
-            try:
-                comment_24 = soup.find('div', class_='js_expandedText p24_expandedText hide')
-                prop_desc = ' '.join(comment_24.stripped_strings)
-            except:
-                prop_desc = None
+    except KeyError as e:
+        print(f"Error in extracting features for {url}: {e}")
+        prop_ID, erfSize, prop_type, floor_size, rates, levy = None, None, None, None, None, None
 
-            current_datetime = datetime.now().strftime('%Y-%m-%d')
-            data_desc = {"Listing ID": listing_id, "Description": prop_desc, "Time_stamp": current_datetime}
-            return photo_data, data_desc
+    try:
+        prop_feat_div = soup.find('div', id='property-features-list')
+        lists_feat = prop_feat_div.find('ul', class_='property-features__list')
+        feats = lists_feat.find_all('li')
+        for feat in feats:
+            feat_icon = feat.find('svg').find('use').get('xlink:href')
+            if '#bedrooms' in feat_icon:
+                beds = feat.find('span', class_='property-features__value').text.strip()
+            elif '#bathroom' in feat_icon:
+                baths = feat.find('span', class_='property-features__value').text.strip()
+            elif '#lounges' in feat_icon:
+                lounge = feat.find('span', class_='property-features__value').text.strip()
+            elif '#dining' in feat_icon:
+                dining = feat.find('span', class_='property-features__value').text.strip()
+            elif '#garages' in feat_icon:
+                garage = feat.find('span', class_='property-features__value').text.strip()
+            elif '#covered-parking' in feat_icon:
+                parking = feat.find('span', class_='property-features__value').text.strip()
+            elif '#storeys' in feat_icon:
+                storeys = feat.find('span', class_='property-features__value').text.strip()
+
+    except (AttributeError, KeyError) as f:
+        print(f"Property Features Not Found for {url}: {f}")
+        beds, baths, lounge, dining, garage, parking, storeys = None, None, None, None, None, None, None
+
+    try:
+        agent_name = None
+        agent_url = None
+        script_tag = soup.find('script', string=re.compile(r'const serverVariables'))
+        if script_tag:
+            script_content = script_tag.string
+            script_data2 = re.search(r'const serverVariables\s*=\s*({.*?});', script_content, re.DOTALL).group(1)
+            json_data = json.loads(script_data2)
+            agent_name = json_data['bundleParams']['agencyInfo']['agencyName']
+            agent_url = json_data['bundleParams']['agencyInfo']['agencyPageUrl']
+            agent_url = f"https://www.privateproperty.co.za{agent_url}"
+    except (AttributeError, KeyError) as e:
+        print(f"Agent details not found for {url}: {e}")
+        agent_name, agent_url = None, None
+
+    return {
+        "Listing ID": prop_ID, "Erf Size": erfSize, "Property Type": prop_type, "Floor Size": floor_size,
+        "Rates and taxes": rates, "Levies": levy, "Bedrooms": beds, "Bathrooms": baths, "Lounges": lounge,
+        "Dining": dining, "Garages": garage, "Covered Parking": parking, "Storeys": storeys, "Agent name": agent_name,
+        "Agent Url": agent_url
+    }
+
+def getIds(soup):
+    try:
+        script_data = soup.find('script', type='application/ld+json').string
+        json_data = json.loads(script_data)
+        url = json_data['url']
+        prop_ID_match = re.search(r'/([^/]+)$', url)
+        if prop_ID_match:
+            prop_ID = prop_ID_match.group(1)
         else:
-            return None, None
+            prop_ID = None
+    except (AttributeError, KeyError) as e:
+        print(f"Failed to extract ID: {e}")
+        prop_ID = None
+
+    return prop_ID
+
+# Initialize thread queue and results list
+queue = Queue()
+results = []
+
+response_text = session.get(f"https://www.privateproperty.co.za/for-sale/mpumalanga/2")
+home_page = BeautifulSoup(response_text.content, 'html.parser')
+
+links = []
+ul = home_page.find('ul', class_='region-content-holder__unordered-list')
+li_items = ul.find_all('li')
+for area in li_items:
+    link = area.find('a')
+    link = f"https://www.privateproperty.co.za{link.get('href')}"
+    links.append(link)
+
+new_links = []
+for l in links:
+    try:
+        res_in_text = session.get(f"{l}")
+        inner = BeautifulSoup(res_in_text.content, 'html.parser')
+        ul2 = inner.find('ul', class_='region-content-holder__unordered-list')
+        if ul2:
+            li_items2 = ul2.find_all('li', class_='region-content-holder__list')
+            for area2 in li_items2:
+                link2 = area2.find('a')
+                link2 = f"https://www.privateproperty.co.za{link2.get('href')}"
+                new_links.append(link2)
+        else:
+            new_links.append(l)
     except Exception as e:
-        return None, None
+        print(f"Request failed for {l}: {e}")
 
-def scrape_property_details(listing_ids):
-    prop_desc_list = []
-    photo_data_list = []
+for x in new_links:
+    try:
+        land = session.get(x)
+        land_html = BeautifulSoup(land.content, 'html.parser')
+        pgs = getPages(land_html, x)
+        for p in range(1, pgs + 1):
+            home_page = session.get(f"{x}?page={p}")
+            soup = BeautifulSoup(home_page.content, 'html.parser')
+            prop_contain = soup.find_all('a', class_='listing-result')
+            for x_page in prop_contain:
+                prop_id = getIds(x_page)
+                if prop_id:
+                    list_url = f"https://www.privateproperty.co.za/for-sale/something/something/something/{prop_id}"
+                    queue.put({"url": list_url, "extract_function": extractor})
+    except Exception as e:
+        print(f"Failed to process URL {x}: {e}")
 
-    for index, listing_id in enumerate(listing_ids, start=1):
-        photo_data, prop_desc = extract_property_details(listing_id)
-        if prop_desc:
-            prop_desc_list.append(prop_desc)
-        if photo_data:
-            photo_data_list.extend(photo_data)
+# Start threads
+num_threads = 40  # Adjust the number of threads based on your system's capabilities
+threads = []
+for i in range(num_threads):
+    t = threading.Thread(target=worker, args=(queue, results))
+    t.start()
+    threads.append(t)
 
-        if index % 200 == 0 or index == len(listing_ids):
-            time.sleep(60)
+# Block until all tasks are done
+queue.join()
 
-    timenow = datetime.now().strftime('%H:%M')
-    container_name = "comments-pics"
-    filename_comments = f"Prop24Comments(2){timenow}.csv"
-    filename_pics = f"Prop24pics(2){timenow}.csv"
+# Stop workers
+for i in range(num_threads):
+    queue.put(None)
+for t in threads:
+    t.join()
 
-    connection_string = "DefaultEndpointsProtocol=https;AccountName=privateproperty;AccountKey=zX/k04pby4o1V9av1a5U2E3fehg+1bo61C6cprAiPVnql+porseL1NVw6SlBBCnVaQKgxwfHjZyV+AStKg0N3A==;BlobEndpoint=https://privateproperty.blob.core.windows.net/;QueueEndpoint=https://privateproperty.queue.core.windows.net/;TableEndpoint=https://privateproperty.table.core.windows.net/;FileEndpoint=https://privateproperty.file.core.windows.net/;"
-    BlobClient.from_connection_string(conn_str=connection_string, container_name=container_name, blob_name=filename_comments).upload_blob(pd.DataFrame(prop_desc_list).to_csv(encoding="utf-8", index=False), overwrite=True)
-    BlobClient.from_connection_string(conn_str=connection_string, container_name=container_name, blob_name=filename_pics).upload_blob(pd.DataFrame(photo_data_list).to_csv(encoding="utf-8", index=False), overwrite=True)
+# Write results to CSV
+csv_filename = 'prop.csv'
+with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
+    fieldnames = results[0].keys() if results else []
+    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    writer.writeheader()
+    for result in results:
+        writer.writerow(result)
 
-if __name__ == "__main__":
-    main()
-    scrape_property_details(thread_data)
+# Upload to Azure Blob Storage
+blob_connection_string = "DefaultEndpointsProtocol=https;AccountName=privateproperty;AccountKey=zX/k04pby4o1V9av1a5U2E3fehg+1bo61C6cprAiPVnql+porseL1NVw6SlBBCnVaQKgxwfHjZyV+AStKg0N3A==;BlobEndpoint=https://privateproperty.blob.core.windows.net/;QueueEndpoint=https://privateproperty.queue.core.windows.net/;TableEndpoint=https://privateproperty.table.core.windows.net/;FileEndpoint=https://privateproperty.file.core.windows.net/;"
+blob = BlobClient.from_connection_string(
+    blob_connection_string,
+    container_name="privateprop",
+    blob_name=csv_filename
+)
+with open(csv_filename, "rb") as data:
+    blob.upload_blob(data, overwrite=True)
+
+print("CSV file uploaded to Azure Blob Storage.")
