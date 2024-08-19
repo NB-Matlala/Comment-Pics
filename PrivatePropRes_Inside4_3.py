@@ -192,7 +192,7 @@ async def main():
             print(f"Start Time: {start_time}")
             print(f"End Time: {end_time}")
 
-    connection_string = "DefaultEndpointsProtocol=https;AccountName=autotraderstorage;AccountKey=s7VIsKxE3aekvLIvwPJmo//Lbdv6Fd5Ip+tl/EmeFl0/RIFr90IQqw6iTAaPOdzMRTtwhK4CcHbj+AStMZIlNg==;BlobEndpoint=https://autotraderstorage.blob.core.windows.net/;QueueEndpoint=https://autotraderstorage.queue.core.windows.net/;TableEndpoint=https://autotraderstorage.table.core.windows.net/;FileEndpoint=https://autotraderstorage.file.core.windows.net/;"
+    connection_string = "DefaultEndpointsProtocol=https;AccountName=privateproperty;AccountKey=zX/k04pby4o1V9av1a5U2E3fehg+1bo61C6cprAiPVnql+porseL1NVw6SlBBCnVaQKgxwfHjZyV+AStKg0N3A==;BlobEndpoint=https://privateproperty.blob.core.windows.net/;QueueEndpoint=https://privateproperty.queue.core.windows.net/;TableEndpoint=https://privateproperty.table.core.windows.net/;FileEndpoint=https://privateproperty.file.core.windows.net/;"
     container_name = "comments-pics"
     
     # Uploading PrivComments.csv
