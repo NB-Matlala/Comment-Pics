@@ -206,7 +206,7 @@ with open(filename, "rb") as data:
 
 blob_pics = BlobClient.from_connection_string(
     blob_connection_string,
-    container_name="privateprop",
+    container_name="comments-pics",
     blob_name=filename_pics
 )
 with open(filename_pics, "rb") as data:
