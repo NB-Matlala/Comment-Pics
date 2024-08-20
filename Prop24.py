@@ -129,7 +129,7 @@ def getIds(soup):
 queue = Queue()
 results = []
 
-response_text = session.get(f"https://www.privateproperty.co.za/for-sale/mpumalanga/2")
+response_text = session.get(f"https://www.privateproperty.co.za/for-sale/mpumalanga/4")
 home_page = BeautifulSoup(response_text.content, 'html.parser')
 
 links = []
@@ -192,7 +192,7 @@ for t in threads:
     t.join()
 
 # Write results to CSV
-csv_filename = 'prop.csv'
+csv_filename = 'prop2.csv'
 with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
     fieldnames = results[0].keys() if results else []
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
