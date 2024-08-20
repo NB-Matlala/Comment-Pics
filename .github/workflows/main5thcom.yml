@@ -2,7 +2,7 @@ name: Web PrivPropCom
 
 on:
   schedule:
-    - cron: '00 11 * * *' # Runs at 00:30 CAT (UTC+2)
+    - cron: '30 00 * * 0' # Runs at 00:30 CAT (UTC+2)
     # - cron: '35 03 * * *' # Runs at 00:30 CAT (UTC+2)
     
 jobs:
