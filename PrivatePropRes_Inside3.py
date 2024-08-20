@@ -1,20 +1,41 @@
-import aiohttp
-import asyncio
-import re
+########################################################################################################################
+
 from bs4 import BeautifulSoup
-import json
-import random
-import csv
+from requests_html import HTMLSession
+import re
 import math
+import json
+import time
+import threading
+from queue import Queue
 from datetime import datetime
+import csv
 from azure.storage.blob import BlobClient
 
-async def fetch(session, url, semaphore):
-    async with semaphore:
-        async with session.get(url) as response:
-            return await response.text()
+session = HTMLSession()
 
-######################################Functions##########################################################
+# Thread worker function
+def worker(queue, results, pic_results):
+    while True:
+        item = queue.get()
+        if item is None:
+            break
+        url = item.get("url")
+        extract_function = item.get("extract_function")
+        try:
+            response = session.get(url)
+            soup = BeautifulSoup(response.content, 'html.parser')
+            result = extract_function(soup, url)
+            if result:
+                if extract_function == extractor:
+                    results.append(result)
+                elif extract_function == extractor_pics:
+                    pic_results.extend(result)
+        except Exception as e:
+            print(f"Request failed for {url}: {e}")
+        finally:
+            queue.task_done()
+
 def getPages(soupPage, url):
     try:
         num_pg = soupPage.find('div', class_='listing-results-layout__mobile-item-count txt-small-regular')
@@ -26,22 +47,7 @@ def getPages(soupPage, url):
         print(f"Failed to parse number of pages for URL: {url} - {e}")
         return 0
 
-def getIds(soup):
-    script_data = soup.find('script', type='application/ld+json').string
-    json_data = json.loads(script_data)
-    try:
-        url = json_data['url']
-        prop_ID_match = re.search(r'/([^/]+)$', url)
-        if prop_ID_match:
-            prop_ID = prop_ID_match.group(1)
-        else:
-            prop_ID = None
-    except KeyError:
-        prop_ID = None
-
-    return prop_ID
-
-def extractor(soup, url): # extracts from created urls
+def extractor(soup, url):
     try:
         prop_ID = None
         prop_div = soup.find('div', class_='property-features')
@@ -50,16 +56,16 @@ def extractor(soup, url): # extracts from created urls
         for feature in features:
             icon = feature.find('svg').find('use').get('xlink:href')
             if '#listing-alt' in icon:
-                prop_ID = feature.find('span',class_='property-features__value').text.strip()
+                prop_ID = feature.find('span', class_='property-features__value').text.strip()
     except KeyError:
         prop_ID = None
-    
+
     try:
         comment_div = soup.find('div', class_='listing-description__text')
         prop_desc = comment_div.text.strip()
     except:
         prop_desc = None
-    
+
     current_datetime = datetime.now().strftime('%Y-%m-%d')
 
     return {
@@ -74,148 +80,135 @@ def extractor_pics(soup, prop_id): # extracts from created urls
             script_data2 = re.search(r'const serverVariables\s*=\s*({.*?});', script_content, re.DOTALL).group(1)
             json_data = json.loads(script_data2)
             photos = json_data['bundleParams']['galleryPhotos']
-        
+
             # Extract all mediumUrl urls
             photo_urls = [item['mediumUrl'] for item in photos]
-        
-            # Store the extracted URLs with the listing ID            
+
+            # Store the extracted URLs with the listing ID
             count = 0
             for url in photo_urls:
-                count +=1
+                count += 1
                 photo_data.append({'Listing_ID': prop_id, 'Photo_Link': url})
-                if count ==8:
-                    break;
+                if count == 8:
+                    break
+        return photo_data
     except KeyError:
         print('Pictures not found')
+        return []
 
-    return photo_data
+def getIds(soup):
+    try:
+        script_data = soup.find('script', type='application/ld+json').string
+        json_data = json.loads(script_data)
+        url = json_data['url']
+        prop_ID_match = re.search(r'/([^/]+)$', url)
+        if prop_ID_match:
+            return prop_ID_match.group(1)
+    except Exception as e:
+        print(f"Error extracting ID from {soup}: {e}")
+    return None
 
-######################################Functions##########################################################
-async def main():
-    fieldnames = ['Listing ID', 'Description', 'Time_stamp']
-    filename = "PrivComments3.csv"
-    
-    fieldnames_pics = ['Listing_ID', 'Photo_Link']
-    filename_pics = "PrivPictures3.csv"
-    
-    ids = []
-    semaphore = asyncio.Semaphore(500)
+fieldnames = ['Listing ID', 'Description', 'Time_stamp']
+filename = "PrivComments3.csv"
 
-    async with aiohttp.ClientSession() as session:
-        with open(filename, 'a', newline='', encoding='utf-8-sig') as csvfile, \
-             open(filename_pics, 'a', newline='', encoding='utf-8-sig') as csvfile_pics:
-            
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer_pics = csv.DictWriter(csvfile_pics, fieldnames=fieldnames_pics)
-            
-            writer.writeheader()
-            writer_pics.writeheader()
-            
-            start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+fieldnames_pics = ['Listing_ID', 'Photo_Link']
+filename_pics = "PrivPictures3.csv"
 
-            async def process_province(prov):
-                response_text = await fetch(session, f"https://www.privateproperty.co.za/for-sale/mpumalanga/{prov}", semaphore)
-                home_page = BeautifulSoup(response_text, 'html.parser')
+# Initialize thread queue and results list
+queue = Queue()
+results = []
+pic_results = []
 
-                links = []
-                ul = home_page.find('ul', class_='region-content-holder__unordered-list')
-                li_items = ul.find_all('li')
-                for area in li_items:
-                    link = area.find('a')
-                    link = f"https://www.privateproperty.co.za{link.get('href')}"
-                    links.append(link)
+response_text = session.get(f"https://www.privateproperty.co.za/for-sale/mpumalanga/4")
+home_page = BeautifulSoup(response_text.content, 'html.parser')
 
-                new_links = []
-                for l in links:
-                    try:
-                        res_in_text = await fetch(session, f"{l}", semaphore)
-                        inner = BeautifulSoup(res_in_text, 'html.parser')
-                        ul2 = inner.find('ul', class_='region-content-holder__unordered-list')
-                        if ul2:
-                            li_items2 = ul2.find_all('li', class_='region-content-holder__list')
-                            for area2 in li_items2:
-                                link2 = area2.find('a')
-                                link2 = f"https://www.privateproperty.co.za{link2.get('href')}"
-                                new_links.append(link2)
-                        else:
-                            new_links.append(l)
-                    except aiohttp.ClientError as e:
-                        print(f"Request failed for {l}: {e}")
+links = []
+ul = home_page.find('ul', class_='region-content-holder__unordered-list')
+li_items = ul.find_all('li')
+for area in li_items:
+    link = area.find('a')
+    link = f"https://www.privateproperty.co.za{link.get('href')}"
+    links.append(link)
 
-                async def process_link(x):
-                    try:
-                        x_response_text = await fetch(session, x, semaphore)
-                        x_page = BeautifulSoup(x_response_text, 'html.parser')
-                        num_pages = getPages(x_page, x)
+new_links = []
+for l in links:
+    try:
+        res_in_text = session.get(f"{l}")
+        inner = BeautifulSoup(res_in_text.content, 'html.parser')
+        ul2 = inner.find('ul', class_='region-content-holder__unordered-list')
+        if ul2:
+            li_items2 = ul2.find_all('li', class_='region-content-holder__list')
+            for area2 in li_items2:
+                link2 = area2.find('a')
+                link2 = f"https://www.privateproperty.co.za{link2.get('href')}"
+                new_links.append(link2)
+        else:
+            new_links.append(l)
+    except Exception as e:
+        print(f"Request failed for {l}: {e}")
 
-                        for s in range(1, num_pages + 1):
-                            if s % 10 == 0:
-                                sleep_duration = random.randint(10, 15)
-                                await asyncio.sleep(sleep_duration)
+for x in new_links:
+    try:
+        land = session.get(x)
+        land_html = BeautifulSoup(land.content, 'html.parser')
+        pgs = getPages(land_html, x)
+        for p in range(1, pgs + 1):
+            home_page = session.get(f"{x}?page={p}")
+            soup = BeautifulSoup(home_page.content, 'html.parser')
+            prop_contain = soup.find_all('a', class_='listing-result')
+            for x_page in prop_contain:
+                prop_id = getIds(x_page)
+                if prop_id:
+                    list_url = f"https://www.privateproperty.co.za/for-sale/something/something/something/{prop_id}"
+                    queue.put({"url": list_url, "extract_function": extractor})
+                    queue.put({"url": list_url, "extract_function": extractor_pics})
+    except Exception as e:
+        print(f"Failed to process URL {x}: {e}")
 
-                            prop_page_text = await fetch(session, f"{x}?page={s}", semaphore)
-                            x_prop = BeautifulSoup(prop_page_text, 'html.parser')
-                            prop_contain = x_prop.find_all('a', class_='listing-result')
-                            for prop in prop_contain:
-                                data = getIds(prop)
-                                ids.append(data)
-                    except Exception as e:
-                        print(f"An error occurred while processing link {x}: {e}")
+# Start threads
+num_threads = 10  
+threads = []
+for i in range(num_threads):
+    t = threading.Thread(target=worker, args=(queue, results, pic_results))
+    t.start()
+    threads.append(t)
 
-                tasks = [process_link(x) for x in new_links]
-                await asyncio.gather(*tasks)
+# Block until all tasks are done
+queue.join()
 
-            async def process_ids():
-                count = 0
+# Stop workers
+for i in range(num_threads):
+    queue.put(None)
+for t in threads:
+    t.join()
 
-                async def process_id(list_id):
-                    nonlocal count
-                    count += 1
-                    if count % 1000 == 0:
-                        print(f"Processed {count} IDs, sleeping for 20 seconds...")
-                        await asyncio.sleep(55)
-                    list_url = f"https://www.privateproperty.co.za/for-sale/something/something/something/{list_id}"
-                    try:
-                        listing = await fetch(session, list_url, semaphore)
-                        list_page = BeautifulSoup(listing, 'html.parser')
-                        
-                        # Extracting data and writing to the comments file
-                        data = extractor(list_page, list_url)
-                        writer.writerow(data)
-                        
-                        # Extracting photos and writing to the pictures file
-                        photo_data = extractor_pics(list_page, list_id)
-                        for photo in photo_data:
-                            writer_pics.writerow(photo)
-                        
-                    except Exception as e:
-                        print(f"An error occurred while processing ID {list_id}: {e}")
+# Write results to CSV files
+with open(filename, mode='w', newline='', encoding='utf-8') as file:
+    writer = csv.DictWriter(file, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerows(results)
 
-                tasks = [process_id(list_id) for list_id in ids]
-                await asyncio.gather(*tasks)
+with open(filename_pics, mode='w', newline='', encoding='utf-8') as file:
+    writer = csv.DictWriter(file, fieldnames=fieldnames_pics)
+    writer.writeheader()
+    writer.writerows(pic_results)
 
-            await asyncio.gather(*(process_province(prov) for prov in range(4, 5)))
-            await process_ids()
-            end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print(f"Start Time: {start_time}")
-            print(f"End Time: {end_time}")
+# Upload to Azure Blob Storage
+blob_connection_string = "DefaultEndpointsProtocol=https;AccountName=privateproperty;AccountKey=zX/k04pby4o1V9av1a5U2E3fehg+1bo61C6cprAiPVnql+porseL1NVw6SlBBCnVaQKgxwfHjZyV+AStKg0N3A==;BlobEndpoint=https://privateproperty.blob.core.windows.net/;QueueEndpoint=https://privateproperty.queue.core.windows.net/;TableEndpoint=https://privateproperty.table.core.windows.net/;FileEndpoint=https://privateproperty.file.core.windows.net/;"
+blob = BlobClient.from_connection_string(
+    blob_connection_string,
+    container_name="comments-pics",
+    blob_name=filename
+)
+with open(filename, "rb") as data:
+    blob.upload_blob(data, overwrite=True)
 
-    connection_string = "DefaultEndpointsProtocol=https;AccountName=privateproperty;AccountKey=zX/k04pby4o1V9av1a5U2E3fehg+1bo61C6cprAiPVnql+porseL1NVw6SlBBCnVaQKgxwfHjZyV+AStKg0N3A==;BlobEndpoint=https://privateproperty.blob.core.windows.net/;QueueEndpoint=https://privateproperty.queue.core.windows.net/;TableEndpoint=https://privateproperty.table.core.windows.net/;FileEndpoint=https://privateproperty.file.core.windows.net/;"
-    container_name = "comments-pics"
-    
-    # Uploading PrivComments.csv
-    blob_name_comments = "PrivComments3.csv"
-    blob_client_comments = BlobClient.from_connection_string(connection_string, container_name, blob_name_comments)
-    with open(filename, "rb") as data:
-        blob_client_comments.upload_blob(data, overwrite=True)
-        print(f"File uploaded to Azure Blob Storage: {blob_name_comments}")
+blob_pics = BlobClient.from_connection_string(
+    blob_connection_string,
+    container_name="comments-pics",
+    blob_name=filename_pics
+)
+with open(filename_pics, "rb") as data:
+    blob_pics.upload_blob(data, overwrite=True)
 
-    # Uploading PrivPictures.csv
-    blob_name_pics = "PrivPictures3.csv"
-    blob_client_pics = BlobClient.from_connection_string(connection_string, container_name, blob_name_pics)
-    with open(filename_pics, "rb") as data_pics:
-        blob_client_pics.upload_blob(data_pics, overwrite=True)
-        print(f"File uploaded to Azure Blob Storage: {blob_name_pics}")
-
-# Running the main coroutine
-asyncio.run(main())
+print("CSV files uploaded to Azure Blob Storage.")
