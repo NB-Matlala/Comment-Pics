@@ -13,7 +13,7 @@ from azure.storage.blob import BlobClient
 session = HTMLSession()
 
 # Thread worker function
-def worker(queue, results):
+def worker(queue, results, pic_results):
     while True:
         item = queue.get()
         if item is None:
@@ -25,7 +25,10 @@ def worker(queue, results):
             soup = BeautifulSoup(response.content, 'html.parser')
             result = extract_function(soup, url)
             if result:
-                results.append(result)
+                if extract_function == extractor:
+                    results.append(result)
+                elif extract_function == extractor_pics:
+                    pic_results.extend(result)
         except Exception as e:
             print(f"Request failed for {url}: {e}")
         finally:
@@ -43,75 +46,53 @@ def getPages(soupPage, url):
         return 0
 
 def extractor(soup, url):
-    # Initialize variables with default values
-    prop_ID = erfSize = floor_size = rates = levy = None
-    beds = baths = lounge = dining = garage = parking = storeys = None
-    agent_name = agent_url = None
-
     try:
+        prop_ID = None
         prop_div = soup.find('div', class_='property-features')
         lists = prop_div.find('ul', class_='property-features__list')
         features = lists.find_all('li')
         for feature in features:
             icon = feature.find('svg').find('use').get('xlink:href')
-            value = feature.find('span', class_='property-features__value').text.strip()
             if '#listing-alt' in icon:
-                prop_ID = value
-            elif '#property-type' in icon:
-                prop_type = value
-            elif '#erf-size' in icon:
-                erfSize = value.replace('\xa0', ' ')
-            elif '#property-size' in icon:
-                floor_size = value.replace('\xa0', ' ')
-            elif '#rates' in icon:
-                rates = value.replace('\xa0', ' ')
-            elif '#levies' in icon:
-                levy = value.replace('\xa0', ' ')
-    except Exception as e:
-        print(f"Error extracting property features for {url}: {e}")
+                prop_ID = feature.find('span', class_='property-features__value').text.strip()
+    except KeyError:
+        prop_ID = None
 
     try:
-        prop_feat_div = soup.find('div', id='property-features-list')
-        lists_feat = prop_feat_div.find('ul', class_='property-features__list')
-        feats = lists_feat.find_all('li')
-        for feat in feats:
-            feat_icon = feat.find('svg').find('use').get('xlink:href')
-            value = feat.find('span', class_='property-features__value').text.strip()
-            if '#bedrooms' in feat_icon:
-                beds = value
-            elif '#bathroom' in feat_icon:
-                baths = value
-            elif '#lounges' in feat_icon:
-                lounge = value
-            elif '#dining' in feat_icon:
-                dining = value
-            elif '#garages' in feat_icon:
-                garage = value
-            elif '#covered-parking' in feat_icon:
-                parking = value
-            elif '#storeys' in feat_icon:
-                storeys = value
-    except Exception as e:
-        print(f"Error extracting property features list for {url}: {e}")
+        comment_div = soup.find('div', class_='listing-description__text')
+        prop_desc = comment_div.text.strip()
+    except:
+        prop_desc = None
 
+    current_datetime = datetime.now().strftime('%Y-%m-%d')
+
+    return {
+        "Listing ID": prop_ID, "Description": prop_desc, "Time_stamp": current_datetime}
+
+def extractor_pics(soup, prop_id): # extracts from created urls
     try:
         script_tag = soup.find('script', string=re.compile(r'const serverVariables'))
+        photo_data = []
         if script_tag:
             script_content = script_tag.string
             script_data2 = re.search(r'const serverVariables\s*=\s*({.*?});', script_content, re.DOTALL).group(1)
             json_data = json.loads(script_data2)
-            agent_name = json_data['bundleParams']['agencyInfo']['agencyName']
-            agent_url = json_data['bundleParams']['agencyInfo']['agencyPageUrl']
-            agent_url = f"https://www.privateproperty.co.za{agent_url}"
-    except Exception as e:
-        print(f"Error extracting agent information for {url}: {e}")
+            photos = json_data['bundleParams']['galleryPhotos']
 
-    return {
-        "Listing ID": prop_ID, "Erf Size": erfSize, "Property Type": prop_type, "Floor Size": floor_size,
-        "Rates and taxes": rates, "Levies": levy, "Bedrooms": beds, "Bathrooms": baths, "Lounges": lounge,
-        "Dining": dining, "Garages": garage, "Covered Parking": parking, "Storeys": storeys, "Agent name": agent_name,
-        "Agent Url": agent_url
-    }
+            # Extract all mediumUrl urls
+            photo_urls = [item['mediumUrl'] for item in photos]
+
+            # Store the extracted URLs with the listing ID
+            count = 0
+            for url in photo_urls:
+                count += 1
+                photo_data.append({'Listing_ID': prop_id, 'Photo_Link': url})
+                if count == 8:
+                    break
+        return photo_data
+    except KeyError:
+        print('Pictures not found')
+        return []
 
 def getIds(soup):
     try:
@@ -125,9 +106,16 @@ def getIds(soup):
         print(f"Error extracting ID from {soup}: {e}")
     return None
 
+fieldnames = ['Listing ID', 'Description', 'Time_stamp']
+filename = "PrivComments2.csv"
+
+fieldnames_pics = ['Listing_ID', 'Photo_Link']
+filename_pics = "PrivPictures2.csv"
+
 # Initialize thread queue and results list
 queue = Queue()
 results = []
+pic_results = []
 
 response_text = session.get(f"https://www.privateproperty.co.za/for-sale/mpumalanga/4")
 home_page = BeautifulSoup(response_text.content, 'html.parser')
@@ -171,14 +159,15 @@ for x in new_links:
                 if prop_id:
                     list_url = f"https://www.privateproperty.co.za/for-sale/something/something/something/{prop_id}"
                     queue.put({"url": list_url, "extract_function": extractor})
+                    queue.put({"url": list_url, "extract_function": extractor_pics})
     except Exception as e:
         print(f"Failed to process URL {x}: {e}")
 
 # Start threads
-num_threads = 10  # Adjust the number of threads based on your system's capabilities
+num_threads = 15  
 threads = []
 for i in range(num_threads):
-    t = threading.Thread(target=worker, args=(queue, results))
+    t = threading.Thread(target=worker, args=(queue, results, pic_results))
     t.start()
     threads.append(t)
 
@@ -191,23 +180,33 @@ for i in range(num_threads):
 for t in threads:
     t.join()
 
-# Write results to CSV
-csv_filename = 'prop2.csv'
-with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
-    fieldnames = results[0].keys() if results else []
-    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+# Write results to CSV files
+with open(filename, mode='w', newline='', encoding='utf-8') as file:
+    writer = csv.DictWriter(file, fieldnames=fieldnames)
     writer.writeheader()
-    for result in results:
-        writer.writerow(result)
+    writer.writerows(results)
+
+with open(filename_pics, mode='w', newline='', encoding='utf-8') as file:
+    writer = csv.DictWriter(file, fieldnames=fieldnames_pics)
+    writer.writeheader()
+    writer.writerows(pic_results)
 
 # Upload to Azure Blob Storage
 blob_connection_string = "DefaultEndpointsProtocol=https;AccountName=privateproperty;AccountKey=zX/k04pby4o1V9av1a5U2E3fehg+1bo61C6cprAiPVnql+porseL1NVw6SlBBCnVaQKgxwfHjZyV+AStKg0N3A==;BlobEndpoint=https://privateproperty.blob.core.windows.net/;QueueEndpoint=https://privateproperty.queue.core.windows.net/;TableEndpoint=https://privateproperty.table.core.windows.net/;FileEndpoint=https://privateproperty.file.core.windows.net/;"
 blob = BlobClient.from_connection_string(
     blob_connection_string,
     container_name="privateprop",
-    blob_name=csv_filename
+    blob_name=filename
 )
-with open(csv_filename, "rb") as data:
+with open(filename, "rb") as data:
     blob.upload_blob(data, overwrite=True)
 
-print("CSV file uploaded to Azure Blob Storage.")
+blob_pics = BlobClient.from_connection_string(
+    blob_connection_string,
+    container_name="privateprop",
+    blob_name=filename_pics
+)
+with open(filename_pics, "rb") as data:
+    blob_pics.upload_blob(data, overwrite=True)
+
+print("CSV files uploaded to Azure Blob Storage.")
