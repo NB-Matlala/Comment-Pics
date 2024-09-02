@@ -1,6 +1,9 @@
 name: Web PrivPropRes(Inside)3
 
 on:
+  push:
+    branches:
+      - main
   schedule:
     # - cron: '35 02 * * *' # Runs at 00:30 CAT (UTC+2)
     - cron: '00 01 * * 0' # Runs at 00:30 CAT (UTC+2)
