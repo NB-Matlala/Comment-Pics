@@ -166,7 +166,7 @@ for x in new_links:
         print(f"Failed to process URL {x}: {e}")
 
 # Start threads
-num_threads = 10  
+num_threads = 15
 threads = []
 for i in range(num_threads):
     t = threading.Thread(target=worker, args=(queue, results, pic_results))
