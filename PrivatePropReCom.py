@@ -67,20 +67,29 @@ def extractor(soup, url): # extracts from created urls
 
 def extractor_pics(soup, prop_id): # extracts from created urls
     try:
-        script_tag = soup.find('script', string=re.compile(r'const serverVariables'))
+        photo_div = soup.find('div', class_='details-page-photogrid__photos')
         photo_data = []
-        if script_tag:
-            script_content = script_tag.string
-            script_data2 = re.search(r'const serverVariables\s*=\s*({.*?});', script_content, re.DOTALL).group(1)
-            json_data = json.loads(script_data2)
-            photos = json_data['bundleParams']['galleryPhotos']
+        img_links = photo_div.find_all('img')
+        count = 0
+        for url in img_links:
+            count += 1
+            photo_data.append({'Listing_ID': prop_id, 'Photo_Link': url.get('src')})
+            if count == 8:
+                break        
+        # script_tag = soup.find('script', string=re.compile(r'const serverVariables'))
+        # photo_data = []
+        # if script_tag:
+        #     script_content = script_tag.string
+        #     script_data2 = re.search(r'const serverVariables\s*=\s*({.*?});', script_content, re.DOTALL).group(1)
+        #     json_data = json.loads(script_data2)
+        #     photos = json_data['bundleParams']['galleryPhotos']
 
-            # Extract all mediumUrl urls
-            photo_urls = [item['mediumUrl'] for item in photos]
+        #     # Extract all mediumUrl urls
+        #     photo_urls = [item['mediumUrl'] for item in photos]
 
-            # Store the extracted URLs with the listing ID
-            for url in photo_urls:
-                photo_data.append({'Listing_ID': prop_id, 'Photo_Link': url})
+        #     # Store the extracted URLs with the listing ID
+        #     for url in photo_urls:
+        #         photo_data.append({'Listing_ID': prop_id, 'Photo_Link': url})
     except KeyError:
         print('Pictures not found')
 
