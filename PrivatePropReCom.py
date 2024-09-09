@@ -42,6 +42,28 @@ def getIds(soup):
     return prop_ID
 
 def extractor(soup, url): # extracts from created urls
+    # try:
+    #     prop_ID = None
+    #     prop_div = soup.find('div', class_='property-features')
+    #     lists = prop_div.find('ul', class_='property-features__list')
+    #     features = lists.find_all('li')
+    #     for feature in features:
+    #         icon = feature.find('svg').find('use').get('xlink:href')
+    #         if '#listing-alt' in icon:
+    #             prop_ID = feature.find('span',class_='property-features__value').text.strip()
+    # except KeyError:
+    #     prop_ID = None
+
+    # try:
+    #     comment_div = soup.find('div', class_='listing-description__text')
+    #     prop_desc = comment_div.text.strip()
+    # except:
+    #     prop_desc = None
+
+    # current_datetime = datetime.now().strftime('%Y-%m-%d')
+
+    # return {
+    #     "Listing ID": prop_ID, "Description": prop_desc, "Time_stamp": current_datetime}
     try:
         prop_ID = None
         prop_div = soup.find('div', class_='property-features')
@@ -50,20 +72,34 @@ def extractor(soup, url): # extracts from created urls
         for feature in features:
             icon = feature.find('svg').find('use').get('xlink:href')
             if '#listing-alt' in icon:
-                prop_ID = feature.find('span',class_='property-features__value').text.strip()
+                prop_ID = feature.find('span', class_='property-features__value').text.strip()
     except KeyError:
         prop_ID = None
-
+    
+    prop_desc = None
+    latitude = None
+    longitude = None
+    
     try:
         comment_div = soup.find('div', class_='listing-description__text')
         prop_desc = comment_div.text.strip()
+        script_tag = soup.find('div',class_='listing-details').find('script', type='application/ld+json')
+        photo_data = []
+        # print(script_tag.text)
+        if script_tag:
+            script_content = script_tag.string
+            # script_data2 = re.search(r'application/ld+json\s*=\s*({.*?});', script_content, re.DOTALL).group(1)
+            json_data = json.loads(script_content)
+            latitude = json_data['geo']['latitude']
+            longitude = json_data['geo']['longitude']
     except:
-        prop_desc = None
-
+        print('Error. Cannot find comments')
+    
     current_datetime = datetime.now().strftime('%Y-%m-%d')
+    
+    return {"Listing ID": prop_ID, "Description": prop_desc, "Latitude": latitude, "Longitude": longitude,"Time_stamp": current_datetime}
 
-    return {
-        "Listing ID": prop_ID, "Description": prop_desc, "Time_stamp": current_datetime}
+    
 
 def extractor_pics(soup, prop_id): # extracts from created urls
     try:
@@ -97,7 +133,7 @@ def extractor_pics(soup, prop_id): # extracts from created urls
 
 ######################################Functions##########################################################
 async def main():
-    fieldnames = ['Listing ID', 'Description', 'Time_stamp']
+    fieldnames = ['Listing ID', 'Description', 'Latitude', 'Longitude', 'Time_stamp']
     filename = "PrivComments5.csv"
 
     fieldnames_pics = ['Listing_ID', 'Photo_Link']
