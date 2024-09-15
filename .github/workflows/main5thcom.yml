@@ -31,9 +31,3 @@ jobs:
       - name: Run web scraping
         run: |
           python PrivatePropReCom.py 
-
-      - name: Archive CSV file
-        uses: actions/upload-artifact@v2
-        with:
-          name: PrivatePropReCom.csv
-          path: PrivatePropReCom.csv
