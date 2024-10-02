@@ -50,7 +50,7 @@ def extractor(soup):
         current_datetime = datetime.now().strftime('%Y-%m-%d')
         return {"Listing ID": listing_id, "Description": prop_desc, "Time_stamp": current_datetime}
     except Exception as e:
-        print(f"Extraction failed for id {listing_id} Error: {e}")
+        print(f"Extraction failed for id {soup} Error: {e}")
         return None
 
 def extractor_pics(soup):
@@ -65,7 +65,7 @@ def extractor_pics(soup):
                 break
         return photo_data
     except Exception as e:
-        print(f"Photo extraction failed for id {listing_id} Error: {e}")
+        print(f"Photo extraction failed for id {soup} Error: {e}")
         return []
 
 ######################################## Main Code ###############################################################
