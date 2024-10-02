@@ -50,7 +50,7 @@ def extractor(soup):
         current_datetime = datetime.now().strftime('%Y-%m-%d')
         return {"Listing ID": listing_id, "Description": prop_desc, "Time_stamp": current_datetime}
     except Exception as e:
-        print(f"Extraction failed: {e}")
+        print(f"Extraction failed for id {listing_id} Error: {e}")
         return None
 
 def extractor_pics(soup):
@@ -65,7 +65,7 @@ def extractor_pics(soup):
                 break
         return photo_data
     except Exception as e:
-        print(f"Photo extraction failed: {e}")
+        print(f"Photo extraction failed for id {listing_id} Error: {e}")
         return []
 
 ######################################## Main Code ###############################################################
@@ -80,7 +80,7 @@ queue = Queue()
 results = []
 pic_results = []
 start_pg = 1
-end_pg = 1000
+end_pg = 30
 
 for pg in range(start_pg, end_pg + 1):
     if pg % 20 == 0:
