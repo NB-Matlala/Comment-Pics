@@ -53,4 +53,4 @@ links = ['https://www.property24.com/for-sale/quigney/east-london/eastern-cape/6
 for l in links:
     response = session.get(l)
     soup = BeautifulSoup(response.content, 'html.parser')
-    print(f"Pics: {extractor_pics(soup)}\nDes: {extractor(soup)}"
+    print(f"Pics: {extractor_pics(soup)}\nDes: {extractor(soup)}")
