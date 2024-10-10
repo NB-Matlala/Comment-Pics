@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 from requests_html import HTMLSession
 import re
+import requests
 import math
 import json
 import time
