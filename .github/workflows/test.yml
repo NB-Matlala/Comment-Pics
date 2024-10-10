@@ -1,9 +1,10 @@
 name: Web Prop24Test
 
-on:  
-  push:
-    branches:
-      - main
+on:
+  repository_dispatch:  
+  # push:
+  #   branches:
+  #     - main
 jobs:
   followupjob1:
     runs-on: ubuntu-latest
