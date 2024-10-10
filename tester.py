@@ -59,15 +59,15 @@ session = HTMLSession()
 for a in range(1,4):
     print('Hello World at', datetime.now().strftime('%H:%M'))
 
-    token = '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'
+    # token = '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'
     
-    headers = {
-        'Authorization': f'Bearer {token}',
-        'Accept': 'application/vnd.github.v3+json'
-    }
+    # headers = {
+    #     'Authorization': f'Bearer {token}',
+    #     'Accept': 'application/vnd.github.v3+json'
+    # }
     
-    response = requests.post(
-        'https://api.github.com/repos/NB-Matlala/Comment-Pics/dispatches',
-        headers=headers
-    )
+    # response = requests.post(
+    #     'https://api.github.com/repos/NB-Matlala/Comment-Pics/dispatches',
+    #     headers=headers
+    # )
     
