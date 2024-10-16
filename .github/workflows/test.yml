@@ -1,12 +1,11 @@
 name: Web Prop24Test
 
 on:
-  workflow_dispatch:  
-  # push:
-  #   branches:
-  #     - main
+  push:
+    branches:
+      - main
 jobs:
-  followupjob1:
+  tester:
     runs-on: ubuntu-latest
 
     steps:
