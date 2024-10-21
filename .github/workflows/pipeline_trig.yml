@@ -1,6 +1,9 @@
 name: piperun
 
 on:
+  push:
+    branches:
+      - main
   schedule:
     - cron: '30 07 * * 0' # Runs at 00:30 CAT (UTC+2)
 jobs:
