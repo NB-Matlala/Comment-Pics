@@ -1,4 +1,4 @@
-name: Web PrivImgs
+name: PrivImgs rerun
 
 on:
   push:
