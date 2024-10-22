@@ -99,7 +99,7 @@ def extractor(soup, url):
             latitude = json_data['geo']['latitude']
             longitude = json_data['geo']['longitude']
     except:
-        print('Error. Cannot find comments')
+        print('Error. Cannot find comments',prop_ID)
     
     current_datetime = datetime.now().strftime('%Y-%m-%d')
     
@@ -127,6 +127,7 @@ def extractor_pics(soup, prop_id): # extracts from created urls
         #         if count == 8:
         #             break
         photo_div = soup.find('div', class_='details-page-photogrid__photos')
+        prop_id = prop_id.replace('https://www.privateproperty.co.za/for-sale/something/something/something/', '')
         photo_data = []
         img_links = photo_div.find_all('img')
         count = 0
@@ -153,10 +154,10 @@ def getIds(soup):
     return None
 
 fieldnames = ['Listing ID', 'Description', 'Latitude', 'Longitude', 'Time_stamp']
-filename = f"PrivComments4_1{datetime.now().strftime('%H:%M')}.csv"
+filename = f"PrivComments4_1({datetime.now().strftime('%H:%M')}).csv"
 
 fieldnames_pics = ['Listing_ID', 'Photo_Link']
-filename_pics = f"PrivPictures4_1.csv{datetime.now().strftime('%H:%M')}"
+filename_pics = f"PrivPictures4_1({datetime.now().strftime('%H:%M')}).csv"
 
 # Initialize thread queue and results list
 queue = Queue()
