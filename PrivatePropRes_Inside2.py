@@ -89,15 +89,15 @@ def extractor(soup, url):
     try:
         comment_div = soup.find('div', class_='listing-description__text')
         prop_desc = comment_div.text.strip()
-        script_tag = soup.find('div',class_='listing-details').find('script', type='application/ld+json')
-        photo_data = []
-        # print(script_tag.text)
-        if script_tag:
-            script_content = script_tag.string
-            # script_data2 = re.search(r'application/ld+json\s*=\s*({.*?});', script_content, re.DOTALL).group(1)
-            json_data = json.loads(script_content)
-            latitude = json_data['geo']['latitude']
-            longitude = json_data['geo']['longitude']
+        # script_tag = soup.find('div',class_='listing-details').find('script', type='application/ld+json')
+        # photo_data = []
+        # # print(script_tag.text)
+        # if script_tag:
+        #     script_content = script_tag.string
+        #     # script_data2 = re.search(r'application/ld+json\s*=\s*({.*?});', script_content, re.DOTALL).group(1)
+        #     json_data = json.loads(script_content)
+        #     latitude = json_data['geo']['latitude']
+        #     longitude = json_data['geo']['longitude']
     except:
         print('Error. Cannot find comments')
     
