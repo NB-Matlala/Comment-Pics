@@ -153,10 +153,10 @@ def getIds(soup):
     return None
 
 fieldnames = ['Listing ID', 'Description', 'Latitude', 'Longitude', 'Time_stamp']
-filename = "PrivComments4_1.csv"
+filename = f"PrivComments4_1{datetime.now().strftime('%H:%M')}.csv"
 
 fieldnames_pics = ['Listing_ID', 'Photo_Link']
-filename_pics = "PrivPictures4_1.csv"
+filename_pics = f"PrivPictures4_1.csv{datetime.now().strftime('%H:%M')}"
 
 # Initialize thread queue and results list
 queue = Queue()
@@ -166,7 +166,7 @@ pic_results = []
 with open('IDS.txt','r') as file:
     ids = file.readlines()
 
-ids = [line.strip() for line in miss_ids]
+ids = [line.strip() for line in ids]
 try:
     for x_page in ids:
         prop_id = x_page
