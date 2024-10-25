@@ -284,5 +284,6 @@ for a in links:
     number_of_doors = doors_match.group(1)
     print("carId",Car_ID, "Title",title, "Number of doors:", number_of_doors)
     time.sleep(55)
+    session = requests.Session()
 # print(doors_match)
 
