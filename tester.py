@@ -231,8 +231,9 @@ import json
 import re
 from requests_html import HTMLSession
 import lxml_html_clean
+import httpx
 
-session = HTMLSession()
+session = requests.Session()
 
 
 
@@ -241,8 +242,13 @@ headers_ = {
     'Accept-Language': 'en-US,en;q=0.5'
 } 
 
-html_content = session.get("https://www.cars.co.za/usedcars/",headers=headers_)
-# ('https://www.cars.co.za/for-sale/used/2020-Volkswagen-Tiguan-1.4-TSI-Trendline-Auto-110kW-Western-Cape-Strand/9804442/')
+html_content = session.get(url="https://www.autotrader.co.za/car-for-sale/mercedes-benz/g-class/g63/27536386?vf=2&db=1&s360=0&so=1&pl=1&pq=0&pr=5&po=1")
+content_soup = BeautifulSoup(html_content.content, 'html.parser')
 
-# data_dict = json.loads(html_content.find('script', {'id': '__NEXT_DATA__'}).string)
-print(html_content)
+script_tag = content_soup.find("script", string=re.compile(r"No of doors"))
+doors_match = re.search(r'"No of doors","value":"(\d+)"', script_tag.string if script_tag else "")
+
+number_of_doors = doors_match.group(1)
+print("Number of doors:", number_of_doors)
+# print(doors_match)
+
