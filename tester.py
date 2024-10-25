@@ -233,7 +233,7 @@ from requests_html import HTMLSession
 
 session = requests.Session()
 
-links ['https://www.autotrader.co.za/car-for-sale/alfa-romeo/stelvio/2.9t/27743850?vf=2&db=1&s360=0&so=1&pl=1&pq=0&pr=5&po=1',
+links = ['https://www.autotrader.co.za/car-for-sale/alfa-romeo/stelvio/2.9t/27743850?vf=2&db=1&s360=0&so=1&pl=1&pq=0&pr=5&po=1',
 'https://www.autotrader.co.za/car-for-sale/audi/a1/1.0tfsi/27742667?vf=2&db=0&s360=0&so=1&pl=1&pq=0&pr=3&po=1',
 'https://www.autotrader.co.za/car-for-sale/audi/a1/1.4tfsi/27744283?vf=2&db=1&s360=0&so=1&pl=1&pq=0&pr=4&po=1',
 'https://www.autotrader.co.za/car-for-sale/audi/a1/1.4tfsi/27744455?vf=1&db=0&s360=0&so=0&pl=0&pq=0&pr=3&po=1',
