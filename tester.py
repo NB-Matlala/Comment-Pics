@@ -233,20 +233,56 @@ from requests_html import HTMLSession
 
 session = requests.Session()
 
-
+links ['https://www.autotrader.co.za/car-for-sale/alfa-romeo/stelvio/2.9t/27743850?vf=2&db=1&s360=0&so=1&pl=1&pq=0&pr=5&po=1',
+'https://www.autotrader.co.za/car-for-sale/audi/a1/1.0tfsi/27742667?vf=2&db=0&s360=0&so=1&pl=1&pq=0&pr=3&po=1',
+'https://www.autotrader.co.za/car-for-sale/audi/a1/1.4tfsi/27744283?vf=2&db=1&s360=0&so=1&pl=1&pq=0&pr=4&po=1',
+'https://www.autotrader.co.za/car-for-sale/audi/a1/1.4tfsi/27744455?vf=1&db=0&s360=0&so=0&pl=0&pq=0&pr=3&po=1',
+'https://www.autotrader.co.za/car-for-sale/audi/a1/30tfsi/27742813?vf=2&db=0&s360=0&so=1&pl=1&pq=0&pr=2&po=1',
+'https://www.autotrader.co.za/car-for-sale/audi/a1/30tfsi/27743744?vf=2&db=1&s360=0&so=1&pl=1&pq=0&pr=2&po=1',
+'https://www.autotrader.co.za/car-for-sale/audi/a3/1.0tfsi/27743832?vf=1&db=0&s360=0&so=0&pl=0&pq=0&pr=2&po=1',
+'https://www.autotrader.co.za/car-for-sale/audi/a3/1.4tfsi/27743997?vf=3&db=0&s360=0&so=0&pl=0&pq=0&pr=4&po=1',
+'https://www.autotrader.co.za/car-for-sale/audi/a3/1.8tfsi/27743694?vf=2&db=1&s360=0&so=1&pl=1&pq=0&pr=5&po=1',
+'https://www.autotrader.co.za/car-for-sale/audi/a3/1.8tfsi/27744838?vf=1&db=0&s360=0&so=0&pl=0&pq=0&pr=5&po=1',
+'https://www.autotrader.co.za/car-for-sale/audi/a3/1.8tfsi/27744854?vf=1&db=0&s360=0&so=0&pl=0&pq=0&pr=5&po=1',
+'https://www.autotrader.co.za/car-for-sale/audi/a3/2.0tdi/27742759?vf=1&db=1&s360=0&so=1&pl=0&pq=0&pr=5&po=1',
+'https://www.autotrader.co.za/car-for-sale/audi/a3/30tfsi/27745093?vf=1&db=1&s360=0&so=0&pl=0&pq=0&pr=5&po=1',
+'https://www.autotrader.co.za/car-for-sale/audi/a3/35tfsi/27733740?vf=1&db=0&s360=0&so=0&pl=0&pq=0&pr=5&po=1',
+'https://www.autotrader.co.za/car-for-sale/audi/a3/35tfsi/27741872?vf=2&db=1&s360=0&so=1&pl=1&pq=0&pr=5&po=1',
+'https://www.autotrader.co.za/car-for-sale/audi/a3/35tfsi/27744087?vf=2&db=1&s360=0&so=1&pl=1&pq=0&pr=3&po=1',
+'https://www.autotrader.co.za/car-for-sale/audi/a3/35tfsi/27744375?vf=1&db=1&s360=0&so=1&pl=0&pq=0&pr=3&po=1',
+'https://www.autotrader.co.za/car-for-sale/audi/a1/1.4tfsi/27729160?vf=2&db=1&s360=0&so=1&pl=1&pq=0&pr=4&po=1']
 
 headers_ = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36',
     'Accept-Language': 'en-US,en;q=0.5'
 } 
 
-html_content = session.get(url="https://www.autotrader.co.za/car-for-sale/mercedes-benz/g-class/g63/27536386?vf=2&db=1&s360=0&so=1&pl=1&pq=0&pr=5&po=1")
-content_soup = BeautifulSoup(html_content.content, 'html.parser')
+for a in links: 
+    html_content = session.get(a)
+    content_soup = BeautifulSoup(html_content.content, 'html.parser')
+    cleaned_html = emoji_pattern.sub(r'', page_content)                
+    car_soup = BeautifulSoup(cleaned_html, 'lxml')
+    car_soup_str = str(car_soup)
+    
+    # Regular expression to extract key-value pairs in the pageParameters object
+    pattern = r"pageParameters\['(.*?)'\] = '(.*?)';"
+    matches = re.findall(pattern, car_soup_str)
 
-script_tag = content_soup.find("script", string=re.compile(r"No of doors"))
-doors_match = re.search(r'"No of doors","value":"(\d+)"', script_tag.string if script_tag else "")
+    # Convert to a dictionary
+    page_parameters = {key: value for key, value in matches}
 
-number_of_doors = doors_match.group(1)
-print("Number of doors:", number_of_doors)
+
+    if 'listing_id' in page_parameters:
+        Car_ID= page_parameters['listing_id']  
+    else:
+        Car_ID = None                              
+    
+    title = car_soup.find(class_='e-listing-title').text.strip()
+
+    script_tag = content_soup.find("script", string=re.compile(r"No of doors"))
+    doors_match = re.search(r'"No of doors","value":"(\d+)"', script_tag.string if script_tag else "")
+    
+    number_of_doors = doors_match.group(1)
+    print("carId",Car_ID, "Title",title, "Number of doors:", number_of_doors)
 # print(doors_match)
 
