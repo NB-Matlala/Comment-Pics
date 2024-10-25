@@ -260,9 +260,7 @@ headers_ = {
 for a in links: 
     html_content = session.get(a)
     content_soup = BeautifulSoup(html_content.content, 'html.parser')
-    cleaned_html = emoji_pattern.sub(r'', page_content)                
-    car_soup = BeautifulSoup(cleaned_html, 'lxml')
-    car_soup_str = str(car_soup)
+    car_soup_str = str(content_soup)
     
     # Regular expression to extract key-value pairs in the pageParameters object
     pattern = r"pageParameters\['(.*?)'\] = '(.*?)';"
