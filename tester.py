@@ -275,7 +275,7 @@ for a in links:
     else:
         Car_ID = None                              
     
-    title = car_soup.find(class_='e-listing-title').text.strip()
+    title = content_soup.find(class_='e-listing-title').text.strip()
 
     script_tag = content_soup.find("script", string=re.compile(r"No of doors"))
     doors_match = re.search(r'"No of doors","value":"(\d+)"', script_tag.string if script_tag else "")
