@@ -230,6 +230,7 @@ from bs4 import BeautifulSoup
 import json
 import re
 from requests_html import HTMLSession
+import time
 
 session = requests.Session()
 
@@ -282,5 +283,6 @@ for a in links:
     
     number_of_doors = doors_match.group(1)
     print("carId",Car_ID, "Title",title, "Number of doors:", number_of_doors)
+    time.sleep(55)
 # print(doors_match)
 
