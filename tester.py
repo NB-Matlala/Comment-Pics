@@ -230,8 +230,6 @@ from bs4 import BeautifulSoup
 import json
 import re
 from requests_html import HTMLSession
-import lxml_html_clean
-import httpx
 
 session = requests.Session()
 
