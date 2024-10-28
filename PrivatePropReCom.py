@@ -8,6 +8,10 @@ import csv
 import math
 from datetime import datetime
 from azure.storage.blob import BlobClient
+import os
+
+base_url = os.getenv("BASE_URL")
+con_str_coms = os.getenv("CON_STR_COMS")
 
 async def fetch(session, url, semaphore):
     async with semaphore:
@@ -103,33 +107,33 @@ def extractor(soup, url): # extracts from created urls
 
 def extractor_pics(soup, prop_id): # extracts from created urls
     try:
+        prop_ID = None
+        prop_div = soup.find('div', class_='property-features')
+        lists = prop_div.find('ul', class_='property-features__list')
+        features = lists.find_all('li')
+        for feature in features:
+            icon = feature.find('svg').find('use').get('xlink:href')
+            if '#listing-alt' in icon:
+                prop_ID = feature.find('span', class_='property-features__value').text.strip()
+    except KeyError:
+        prop_ID = None
+    list_id = prop_ID
+    
+    try:
         photo_div = soup.find('div', class_='details-page-photogrid__photos')
         photo_data = []
         img_links = photo_div.find_all('img')
         count = 0
         for url in img_links:
             count += 1
-            photo_data.append({'Listing_ID': prop_id, 'Photo_Link': url.get('src')})
+            photo_data.append({'Listing_ID': list_id, 'Photo_Link': url.get('src')})
             if count == 8:
-                break        
-        # script_tag = soup.find('script', string=re.compile(r'const serverVariables'))
-        # photo_data = []
-        # if script_tag:
-        #     script_content = script_tag.string
-        #     script_data2 = re.search(r'const serverVariables\s*=\s*({.*?});', script_content, re.DOTALL).group(1)
-        #     json_data = json.loads(script_data2)
-        #     photos = json_data['bundleParams']['galleryPhotos']
-
-        #     # Extract all mediumUrl urls
-        #     photo_urls = [item['mediumUrl'] for item in photos]
-
-        #     # Store the extracted URLs with the listing ID
-        #     for url in photo_urls:
-        #         photo_data.append({'Listing_ID': prop_id, 'Photo_Link': url})
+                break
+        return photo_data        
     except KeyError:
         print('Pictures not found')
+        return []
 
-    return photo_data
 
 ######################################Functions##########################################################
 async def main():
@@ -155,7 +159,7 @@ async def main():
             start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             async def process_province(prov):
-                response_text = await fetch(session, f"https://www.privateproperty.co.za/commercial-sales/gauteng/{prov}", semaphore)
+                response_text = await fetch(session, f"{base_url}/commercial-sales/gauteng/{prov}", semaphore)
                 home_page = BeautifulSoup(response_text, 'html.parser')
 
                 links = []
@@ -163,7 +167,7 @@ async def main():
                 li_items = ul.find_all('li')
                 for area in li_items:
                     link = area.find('a')
-                    link = f"https://www.privateproperty.co.za{link.get('href')}"
+                    link = f"{base_url}{link.get('href')}"
                     links.append(link)
 
                 new_links = []
@@ -176,7 +180,7 @@ async def main():
                             li_items2 = ul2.find_all('li', class_='region-content-holder__list')
                             for area2 in li_items2:
                                 link2 = area2.find('a')
-                                link2 = f"https://www.privateproperty.co.za{link2.get('href')}"
+                                link2 = f"{base_url}{link2.get('href')}"
                                 new_links.append(link2)
                         else:
                             new_links.append(l)
@@ -215,7 +219,7 @@ async def main():
                     if count % 1000 == 0:
                         print(f"Processed {count} IDs, sleeping for 20 seconds...")
                         await asyncio.sleep(55)
-                    list_url = f"https://www.privateproperty.co.za/commercial-sales/something/something/something/{list_id}"
+                    list_url = f"{base_url}/commercial-sales/something/something/something/{list_id}"
                     try:
                         listing = await fetch(session, list_url, semaphore)
                         list_page = BeautifulSoup(listing, 'html.parser')
@@ -241,7 +245,7 @@ async def main():
             print(f"Start Time: {start_time}")
             print(f"End Time: {end_time}")
 
-    connection_string = "DefaultEndpointsProtocol=https;AccountName=privateproperty;AccountKey=zX/k04pby4o1V9av1a5U2E3fehg+1bo61C6cprAiPVnql+porseL1NVw6SlBBCnVaQKgxwfHjZyV+AStKg0N3A==;BlobEndpoint=https://privateproperty.blob.core.windows.net/;QueueEndpoint=https://privateproperty.queue.core.windows.net/;TableEndpoint=https://privateproperty.table.core.windows.net/;FileEndpoint=https://privateproperty.file.core.windows.net/;"
+    connection_string = f"{con_str_coms}"
     container_name = "comments-pics"
 
     # Uploading PrivComments.csv
