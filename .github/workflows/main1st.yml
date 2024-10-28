@@ -8,6 +8,10 @@ on:
 jobs:
   scrapeinside3:
     runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ vars.BASE_URL }}
+      LOG_TRG: ${{ vars.LOG_STR }}
+      CON_STR_COMS: ${{ vars.CON_STR_COMS }}
 
     steps:
       - name: Checkout code
