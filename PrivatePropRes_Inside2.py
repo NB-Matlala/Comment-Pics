@@ -11,6 +11,10 @@ from queue import Queue
 from datetime import datetime
 import csv
 from azure.storage.blob import BlobClient
+import os
+
+base_url = os.getenv("BASE_URL")
+con_str_coms = os.getenv("CON_STR_COMS")
 
 session = HTMLSession()
 
@@ -109,34 +113,29 @@ def extractor(soup, url):
 
 def extractor_pics(soup, prop_id): # extracts from created urls
     try:
+        prop_ID = None
+        prop_div = soup.find('div', class_='property-features')
+        lists = prop_div.find('ul', class_='property-features__list')
+        features = lists.find_all('li')
+        for feature in features:
+            icon = feature.find('svg').find('use').get('xlink:href')
+            if '#listing-alt' in icon:
+                prop_ID = feature.find('span', class_='property-features__value').text.strip()
+    except KeyError:
+        prop_ID = None
+    list_id = prop_ID
+    
+    try:
         photo_div = soup.find('div', class_='details-page-photogrid__photos')
         photo_data = []
         img_links = photo_div.find_all('img')
         count = 0
         for url in img_links:
             count += 1
-            photo_data.append({'Listing_ID': prop_id, 'Photo_Link': url.get('src')})
+            photo_data.append({'Listing_ID': list_id, 'Photo_Link': url.get('src')})
             if count == 8:
                 break
-        return photo_data
-        # script_tag = soup.find('script', string=re.compile(r'const serverVariables'))
-        # photo_data = []
-        # if script_tag:
-        #     script_content = script_tag.string
-        #     script_data2 = re.search(r'const serverVariables\s*=\s*({.*?});', script_content, re.DOTALL).group(1)
-        #     json_data = json.loads(script_data2)
-        #     photos = json_data['bundleParams']['galleryPhotos']
-
-        #     # Extract all mediumUrl urls
-        #     photo_urls = [item['mediumUrl'] for item in photos]
-
-        #     # Store the extracted URLs with the listing ID
-        #     count = 0
-        #     for url in photo_urls:
-        #         count += 1
-        #         photo_data.append({'Listing_ID': prop_id, 'Photo_Link': url})
-        #         if count == 8:
-        #             break
+        return photo_data        
     except KeyError:
         print('Pictures not found')
         return []
@@ -164,7 +163,7 @@ queue = Queue()
 results = []
 pic_results = []
 
-response_text = session.get(f"https://www.privateproperty.co.za/for-sale/mpumalanga/2")
+response_text = session.get(f"{base_url}/for-sale/mpumalanga/2")
 home_page = BeautifulSoup(response_text.content, 'html.parser')
 
 links = []
@@ -172,7 +171,7 @@ ul = home_page.find('ul', class_='region-content-holder__unordered-list')
 li_items = ul.find_all('li')
 for area in li_items:
     link = area.find('a')
-    link = f"https://www.privateproperty.co.za{link.get('href')}"
+    link = f"{base_url}{link.get('href')}"
     links.append(link)
 
 new_links = []
@@ -185,7 +184,7 @@ for l in links:
             li_items2 = ul2.find_all('li', class_='region-content-holder__list')
             for area2 in li_items2:
                 link2 = area2.find('a')
-                link2 = f"https://www.privateproperty.co.za{link2.get('href')}"
+                link2 = f"{base_url}{link2.get('href')}"
                 new_links.append(link2)
         else:
             new_links.append(l)
@@ -204,7 +203,7 @@ for x in new_links:
             for x_page in prop_contain:
                 prop_id = getIds(x_page)
                 if prop_id:
-                    list_url = f"https://www.privateproperty.co.za/for-sale/something/something/something/{prop_id}"
+                    list_url = f"{base_url}/for-sale/something/something/something/{prop_id}"
                     queue.put({"url": list_url, "extract_function": extractor})
                     queue.put({"url": list_url, "extract_function": extractor_pics})
     except Exception as e:
@@ -239,7 +238,7 @@ with open(filename_pics, mode='w', newline='', encoding='utf-8') as file:
     writer.writerows(pic_results)
 
 # Upload to Azure Blob Storage
-blob_connection_string = "DefaultEndpointsProtocol=https;AccountName=privateproperty;AccountKey=zX/k04pby4o1V9av1a5U2E3fehg+1bo61C6cprAiPVnql+porseL1NVw6SlBBCnVaQKgxwfHjZyV+AStKg0N3A==;BlobEndpoint=https://privateproperty.blob.core.windows.net/;QueueEndpoint=https://privateproperty.queue.core.windows.net/;TableEndpoint=https://privateproperty.table.core.windows.net/;FileEndpoint=https://privateproperty.file.core.windows.net/;"
+blob_connection_string = f"{con_str_coms}"
 blob = BlobClient.from_connection_string(
     blob_connection_string,
     container_name="comments-pics",
