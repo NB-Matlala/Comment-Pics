@@ -44,9 +44,9 @@ def get_pages(base_url):
 #         property_type = value
 #         break
 
-pgs = get_pages('https://www.property24.com/to-rent/advanced-search/results?sp=pid%3d5%2c6') 
+# pgs = get_pages('https://www.property24.com/to-rent/advanced-search/results?sp=pid%3d5%2c6') 
 
-print(pgs,"pages found.")
+# print(pgs,"pages found.")
 
 response_x = session.get(f'https://www.property24.com/to-rent/advanced-search/results/p2?sp=pid%3d5%2c6', headers=headers)
 soup = BeautifulSoup(response_x.content,'html.parser')
