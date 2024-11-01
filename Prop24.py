@@ -11,7 +11,10 @@ import csv
 from azure.storage.blob import BlobClient
 import os
 
-
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36',
+    'Accept-Language': 'en-US,en;q=0.5'
+}
 # base_url = os.getenv("BASE_URL")
 # con_str_coms = os.getenv("CON_STR_COMS")
 thread_data = []
@@ -42,9 +45,10 @@ def get_pages(base_url):
 #         break
 
 pgs = get_pages('https://www.property24.com/to-rent/advanced-search/results?sp=pid%3d5%2c6') 
+
 print(pgs,"pages found.")
 
-response_x = session.get(f'https://www.property24.com/to-rent/advanced-search/results/p2?sp=pid%3d5%2c6')
+response_x = session.get(f'https://www.property24.com/to-rent/advanced-search/results/p2?sp=pid%3d5%2c6', headers=headers)
 soup = BeautifulSoup(response_x.content,'html.parser')
 print(soup)
 
