@@ -46,6 +46,7 @@ print(pgs,"pages found.")
 
 response_x = session.get(f'https://www.property24.com/to-rent/advanced-search/results/p2?sp=pid%3d5%2c6')
 soup = BeautifulSoup(response_x.content,'html.parser')
+print(soup)
 
 p24_results = soup.find('div', class_='p24_results')
 if p24_results:
@@ -79,7 +80,6 @@ if p24_results:
                         'location': location, 'address': address, 'bedrooms': bedrooms, 'bathrooms': bathrooms, 'parking_spaces': parking_spaces,
                         'erf_size': erf_size, 'floor_size': floor_size, 'url': url,'Timestamp':Timestamp}
             thread_data.append(car_data)
-print(thread_data)
 # for pg in range(1,6):
     
 #     response = session.get(f'https://www.property24.com/to-rent/advanced-search/results/p{pg}?sp=pid%3d5%2c6')
