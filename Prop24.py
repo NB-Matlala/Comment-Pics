@@ -42,7 +42,7 @@ def get_pages(base_url):
 #         break
 
 pgs = get_pages('https://www.property24.com/to-rent/advanced-search/results?sp=pid%3d5%2c6') 
-
+print(pgd,"pages found.")
 for pg in range(1,pgs+1):
     
     response = session.get(f'https://www.property24.com/to-rent/advanced-search/results/p{pg}?sp=pid%3d5%2c6')
