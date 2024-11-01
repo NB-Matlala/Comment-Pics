@@ -81,9 +81,9 @@ for pg in range(1,pgs+1):
                             'erf_size': erf_size, 'floor_size': floor_size, 'url': url,'Timestamp':Timestamp}
                 thread_data.append(car_data)
     print(pg,"scraped.")        
-# for d in thread_data:
-#     print(d)
-print(len(thread_data)," listings found.")
+for d in thread_data:
+    print(d)
+# print(len(thread_data)," listings found.")
 # # Thread worker function
 # def worker(queue, results, pic_results):
 #     while True:
