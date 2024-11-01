@@ -53,7 +53,8 @@ response_x = session.get(f'https://www.property24.com/to-rent/advanced-search/re
 soup = BeautifulSoup(response_x.content,'html.parser')
 print(soup)
 
-response_2 = session.get(f'https://www.property24.com/to-rent/advanced-search/results/p2?sp=pid%3d5%2c6', headers=headers)
+session = HTMLSession()
+response_2 = session.get(f'https://www.property24.com/to-rent/advanced-search/results/p3?sp=pid%3d5%2c6', headers=headers)
 # soup = BeautifulSoup(response_x.content,'html.parser')
 print("response2: ",response_2.status_code)
 
