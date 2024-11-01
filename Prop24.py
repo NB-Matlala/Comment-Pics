@@ -43,7 +43,7 @@ def get_pages(base_url):
 
 pgs = get_pages('https://www.property24.com/to-rent/advanced-search/results?sp=pid%3d5%2c6') 
 print(pgs,"pages found.")
-for pg in range(1,pgs+1):
+for pg in range(1,6):
     
     response = session.get(f'https://www.property24.com/to-rent/advanced-search/results/p{pg}?sp=pid%3d5%2c6')
     soup = BeautifulSoup(response.content,'html.parser')
@@ -81,7 +81,7 @@ for pg in range(1,pgs+1):
                             'erf_size': erf_size, 'floor_size': floor_size, 'url': url,'Timestamp':Timestamp}
                 print(car_data)
                 thread_data.append(car_data)
-    print(pg,"scraped.")        
+    # print(pg,"scraped.")        
 # for d in thread_data:
 #     print(d)
 # print(len(thread_data)," listings found.")
