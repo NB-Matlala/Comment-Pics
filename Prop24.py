@@ -78,9 +78,8 @@ if p24_results:
             car_data = {'title': title, 'listing_number': listing_number, 'price': price, 'estate_agency': estate_agency, 'agent_name': agent_name,
                         'location': location, 'address': address, 'bedrooms': bedrooms, 'bathrooms': bathrooms, 'parking_spaces': parking_spaces,
                         'erf_size': erf_size, 'floor_size': floor_size, 'url': url,'Timestamp':Timestamp}
-            print(car_data)
             thread_data.append(car_data)
-
+print(thread_data)
 # for pg in range(1,6):
     
 #     response = session.get(f'https://www.property24.com/to-rent/advanced-search/results/p{pg}?sp=pid%3d5%2c6')
