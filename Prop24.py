@@ -79,10 +79,11 @@ for pg in range(1,pgs+1):
                 car_data = {'title': title, 'listing_number': listing_number, 'price': price, 'estate_agency': estate_agency, 'agent_name': agent_name,
                             'location': location, 'address': address, 'bedrooms': bedrooms, 'bathrooms': bathrooms, 'parking_spaces': parking_spaces,
                             'erf_size': erf_size, 'floor_size': floor_size, 'url': url,'Timestamp':Timestamp}
+                print(car_data)
                 thread_data.append(car_data)
     print(pg,"scraped.")        
-for d in thread_data:
-    print(d)
+# for d in thread_data:
+#     print(d)
 # print(len(thread_data)," listings found.")
 # # Thread worker function
 # def worker(queue, results, pic_results):
