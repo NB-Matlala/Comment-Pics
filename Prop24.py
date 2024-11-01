@@ -11,55 +11,79 @@ import csv
 from azure.storage.blob import BlobClient
 import os
 
+
 # base_url = os.getenv("BASE_URL")
 # con_str_coms = os.getenv("CON_STR_COMS")
 thread_data = []
 session = HTMLSession()
-response = session.get('https://www.property24.com/to-rent/witbank/mpumalanga/44')
-soup = BeautifulSoup(response.content,'html.parser')
+
+
+def get_pages(base_url):
+    response = session.get(base_url, timeout=70)
+    soup = BeautifulSoup(response.content, 'html.parser')
+    pagination_ul = soup.find('ul', class_='pagination')
+    if pagination_ul:
+        li_elements = pagination_ul.find_all('li')
+        last_page_li = None
+        for li in reversed(li_elements):
+            a_tag = li.find('a')
+            if a_tag:
+                last_page_li = li
+                break
+        if last_page_li and a_tag:
+            last_page_number = a_tag['data-pagenumber']
+            return int(last_page_number)
+    return 6500 
 
 # property_type = None
 # for key, value in url_to_property_type.items():
 #     if key.split('/results')[0] in url:
 #         property_type = value
 #         break
- 
- 
-p24_results = soup.find('div', class_='p24_results')
-if p24_results:
-    col_9_div = p24_results.find('div', class_='col-9')
-    if col_9_div:
-        tile_containers = col_9_div.find_all('div', class_='p24_tileContainer')
-        for tile in tile_containers:
-            estate_agency_span = tile.find('span', class_='p24_branding')
-            estate_agency = estate_agency_span.get('title', '').replace('Estate Agency profile for ', '').strip() if estate_agency_span else None
-            agent_name_span = tile.find('span', class_='p24_brandingAgent')
-            agent_name = agent_name_span.find('span', class_='p24_brandingAgentName').get_text(strip=True) if agent_name_span else None
-            listing_number = tile.get('data-listing-number')
-            a_tag = tile.find('a', href=True)
-            url = a_tag['href'] if a_tag else None
-            price = tile.find(class_='p24_price').get_text(strip=True) if tile.find(class_='p24_price') else None
-            title = tile.find(class_='p24_description').get_text(strip=True) if tile.find(class_='p24_description') else tile.find('span', class_='p24_title').get_text(strip=True) if tile.find('span', class_='p24_title') else None
-            location = tile.find('span', class_='p24_location').get_text(strip=True) if tile.find('span', class_='p24_location') else None
-            address = tile.find('span', class_='p24_address').get_text(strip=True) if tile.find('span', class_='p24_address') else None
-            bedrooms = tile.find('span', class_='p24_featureDetails', title='Bedrooms').find('span').get_text(strip=True) if tile.find('span', class_='p24_featureDetails', title='Bedrooms') else None
-            bathrooms = tile.find('span', class_='p24_featureDetails', title='Bathrooms').find('span').get_text(strip=True) if tile.find('span', class_='p24_featureDetails', title='Bathrooms') else None
-            parking_spaces = tile.find('span', class_='p24_featureDetails', title='Parking Spaces').find('span').get_text(strip=True) if tile.find('span', class_='p24_featureDetails', title='Parking Spaces') else None
-            erf_size = tile.find('span', class_='p24_size', title='Erf Size').find('span').get_text(strip=True) if tile.find('span', class_='p24_size', title='Erf Size') else None
-            if erf_size is None:
-                img_element = tile.find(class_='p24_sizeIcon')
-                if img_element:
-                    erf_size_element = img_element.find_next_sibling('span')
-                    erf_size = erf_size_element.text.strip() if erf_size_element else None
-            floor_size = tile.find('span', class_='p24_size', title='Floor Size').find('span').get_text(strip=True) if tile.find('span', class_='p24_size', title='Floor Size') else None
-            Timestamp = datetime.now().strftime('%Y-%m-%d')
-            car_data = {'title': title, 'listing_number': listing_number, 'price': price, 'estate_agency': estate_agency, 'agent_name': agent_name,
-                        'location': location, 'address': address, 'bedrooms': bedrooms, 'bathrooms': bathrooms, 'parking_spaces': parking_spaces,
-                        'erf_size': erf_size, 'floor_size': floor_size, 'url': url,'Timestamp':Timestamp}
-            thread_data.append(car_data)
-            
-for d in thread_data:
-    print(d)
+
+pgs = get_pages('https://www.property24.com/to-rent/advanced-search/results?sp=pid%3d5%2c6') 
+
+for pg in range(1,pgs+1):
+    
+    response = session.get(f'https://www.property24.com/to-rent/advanced-search/results/p{pg}?sp=pid%3d5%2c6')
+    soup = BeautifulSoup(response.content,'html.parser')
+
+    p24_results = soup.find('div', class_='p24_results')
+    if p24_results:
+        col_9_div = p24_results.find('div', class_='col-9')
+        if col_9_div:
+            tile_containers = col_9_div.find_all('div', class_='p24_tileContainer')
+            for tile in tile_containers:
+                estate_agency_span = tile.find('span', class_='p24_branding')
+                estate_agency = estate_agency_span.get('title', '').replace('Estate Agency profile for ', '').strip() if estate_agency_span else None
+                agent_name_span = tile.find('span', class_='p24_brandingAgent')
+                agent_name = agent_name_span.find('span', class_='p24_brandingAgentName').get_text(strip=True) if agent_name_span else None
+                listing_number = tile.get('data-listing-number')
+                a_tag = tile.find('a', href=True)
+                url = a_tag['href'] if a_tag else None
+                price = tile.find(class_='p24_price').get_text(strip=True) if tile.find(class_='p24_price') else None
+                title = tile.find(class_='p24_description').get_text(strip=True) if tile.find(class_='p24_description') else tile.find('span', class_='p24_title').get_text(strip=True) if tile.find('span', class_='p24_title') else None
+                location = tile.find('span', class_='p24_location').get_text(strip=True) if tile.find('span', class_='p24_location') else None
+                address = tile.find('span', class_='p24_address').get_text(strip=True) if tile.find('span', class_='p24_address') else None
+                bedrooms = tile.find('span', class_='p24_featureDetails', title='Bedrooms').find('span').get_text(strip=True) if tile.find('span', class_='p24_featureDetails', title='Bedrooms') else None
+                bathrooms = tile.find('span', class_='p24_featureDetails', title='Bathrooms').find('span').get_text(strip=True) if tile.find('span', class_='p24_featureDetails', title='Bathrooms') else None
+                parking_spaces = tile.find('span', class_='p24_featureDetails', title='Parking Spaces').find('span').get_text(strip=True) if tile.find('span', class_='p24_featureDetails', title='Parking Spaces') else None
+                erf_size = tile.find('span', class_='p24_size', title='Erf Size').find('span').get_text(strip=True) if tile.find('span', class_='p24_size', title='Erf Size') else None
+                if erf_size is None:
+                    img_element = tile.find(class_='p24_sizeIcon')
+                    if img_element:
+                        erf_size_element = img_element.find_next_sibling('span')
+                        erf_size = erf_size_element.text.strip() if erf_size_element else None
+                floor_size = tile.find('span', class_='p24_size', title='Floor Size').find('span').get_text(strip=True) if tile.find('span', class_='p24_size', title='Floor Size') else None
+                Timestamp = datetime.now().strftime('%Y-%m-%d')
+                car_data = {'title': title, 'listing_number': listing_number, 'price': price, 'estate_agency': estate_agency, 'agent_name': agent_name,
+                            'location': location, 'address': address, 'bedrooms': bedrooms, 'bathrooms': bathrooms, 'parking_spaces': parking_spaces,
+                            'erf_size': erf_size, 'floor_size': floor_size, 'url': url,'Timestamp':Timestamp}
+                thread_data.append(car_data)
+    print(pg,"scraped.")        
+# for d in thread_data:
+#     print(d)
+print(len(thread_data)," listings found.")
 # # Thread worker function
 # def worker(queue, results, pic_results):
 #     while True:
