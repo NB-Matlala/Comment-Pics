@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       BASE_URL: ${{ vars.BASE_URL }}
-      LOG_TRG: ${{ vars.LOG_STR }}
+      LOG_TRG: ${{ vars.LOG_TRG }}
       CON_STR_COMS: ${{ vars.CON_STR_COMS }}
 
     steps:
