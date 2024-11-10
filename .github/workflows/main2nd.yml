@@ -1,11 +1,10 @@
 name: Web PrivPropRes(Inside)
 
 on: 
-  workflow_dispatch:
-  # workflow_run:
-  #   workflows: ["Web PrivPropRes(Inside)3"]
-  #   types:
-  #     - completed
+  workflow_run:
+    workflows: ["Web PrivPropRes(Inside)3"]
+    types:
+      - completed
 jobs:
   followupjob1:
     runs-on: ubuntu-latest
