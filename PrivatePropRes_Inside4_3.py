@@ -167,7 +167,7 @@ gp_links = [f'{base_url}/for-sale/gauteng/bronkhorstspruit/647',
             f'{base_url}/for-sale/gauteng/gauteng-south/812']
 
 for loc in gp_links:
-    response_text = session.get(f"{base_url}/for-sale/mpumalanga/4")
+    response_text = session.get(loc")
     home_page = BeautifulSoup(response_text.content, 'html.parser')
     new_links = []
     try:
