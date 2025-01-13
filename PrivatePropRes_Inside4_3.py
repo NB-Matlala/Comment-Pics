@@ -77,8 +77,8 @@ def extractor(soup, url):
 #         "Listing ID": prop_ID, "Description": prop_desc, "Time_stamp": current_datetime}
     try:
         prop_ID = None
-        prop_div = soup.find('div', class_='property-features')
-        lists = prop_div.find('ul', class_='property-features__list')
+        prop_div = soup.find('div', class_='property-details')
+        lists = prop_div.find('ul', class_='property-details__list')
         features = lists.find_all('li')
         for feature in features:
             icon = feature.find('svg').find('use').get('xlink:href')
@@ -113,8 +113,8 @@ def extractor(soup, url):
 def extractor_pics(soup, prop_id): # extracts from created urls
     try:
         prop_ID = None
-        prop_div = soup.find('div', class_='property-features')
-        lists = prop_div.find('ul', class_='property-features__list')
+        prop_div = soup.find('div', class_='property-details')
+        lists = prop_div.find('ul', class_='property-details__list')
         features = lists.find_all('li')
         for feature in features:
             icon = feature.find('svg').find('use').get('xlink:href')
