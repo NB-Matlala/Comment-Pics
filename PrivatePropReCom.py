@@ -76,7 +76,7 @@ def extractor(soup, url): # extracts from created urls
         for feature in features:
             icon = feature.find('svg').find('use').get('xlink:href')
             if '#listing-alt' in icon:
-                prop_ID = feature.find('span', class_='property-features__value').text.strip()
+                prop_ID = feature.find('span', class_='property-details__value').text.strip()
     except KeyError:
         prop_ID = None
     
@@ -114,7 +114,7 @@ def extractor_pics(soup, prop_id): # extracts from created urls
         for feature in features:
             icon = feature.find('svg').find('use').get('xlink:href')
             if '#listing-alt' in icon:
-                prop_ID = feature.find('span', class_='property-features__value').text.strip()
+                prop_ID = feature.find('span', class_='property-details__value').text.strip()
     except KeyError:
         prop_ID = None
     list_id = prop_ID
