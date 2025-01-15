@@ -1,6 +1,7 @@
 name: Web PrivPropRes(Inside)3
 
 on:
+  workflow_dispatch:
   schedule:
     # - cron: '35 02 * * *' # Runs at 00:30 CAT (UTC+2)
     - cron: '35 01 * * 0' # Runs at 00:30 CAT (UTC+2)
