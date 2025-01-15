@@ -1,6 +1,7 @@
 name: Web PrivPropCom
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: '30 00 * * 0' # Runs at 00:30 CAT (UTC+2)
     # - cron: '35 03 * * *' # Runs at 00:30 CAT (UTC+2)
