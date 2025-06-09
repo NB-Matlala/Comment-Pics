@@ -113,7 +113,6 @@ total_listings_f,num_pages =get_total_pages()
     
 import pandas as pd
 import urllib
-import sqlalchemy
 from datetime import datetime
 
 
