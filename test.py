@@ -336,7 +336,7 @@ print(f"running main details extract")
 import csv
 import os
 import subprocess
-
+sleep_count= 0
 for n in range(1, num_pages + 1):    
     thread = threading.Thread(target=scrape_page, args=(n, car_data_list))
     threads.append(thread)
@@ -349,7 +349,7 @@ for n in range(1, num_pages + 1):
         threads = []  # Reset thread list after joining
 
     # Sleep
-    sleep_count= 0
+    
     if n % 300 == 0:
         print(f"Processed {n} pages, sleeping for 35 seconds...")
         sleep_count+=1
