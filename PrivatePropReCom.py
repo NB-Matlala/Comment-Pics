@@ -31,19 +31,19 @@ def getPages(soupPage, url):
         return 0
 
 def getIds(soup):
-    script_data = soup.find('script', type='application/ld+json').string
-    json_data = json.loads(script_data)
     try:
-        url = json_data['url']
+        # script_data = soup.find('script', type='application/ld+json').string
+        # json_data = json.loads(script_data)
+        # url = json_data['url']
+        url = soup['href']
+
         prop_ID_match = re.search(r'/([^/]+)$', url)
         if prop_ID_match:
-            prop_ID = prop_ID_match.group(1)
-        else:
-            prop_ID = None
-    except KeyError:
-        prop_ID = None
+            return prop_ID_match.group(1)
+    except Exception as e:
+        print(f"Error extracting ID from {soup}: {e}")
+    return None
 
-    return prop_ID
 
 def extractor(soup, url): # extracts from created urls
     # try:
@@ -200,7 +200,8 @@ async def main():
 
                             prop_page_text = await fetch(session, f"{x}?page={s}", semaphore)
                             x_prop = BeautifulSoup(prop_page_text, 'html.parser')
-                            prop_contain = x_prop.find_all('a', class_='listing-result')
+                            prop_contain = x_prop.find_all('a', class_='featured-listing')
+                            prop_contain.extend(x_prop.find_all('a', class_='listing-result'))
                             for prop in prop_contain:
                                 data = getIds(prop)
                                 ids.append(data)
