@@ -141,9 +141,11 @@ def extractor_pics(soup, prop_id): # extracts from created urls
 
 def getIds(soup):
     try:
-        script_data = soup.find('script', type='application/ld+json').string
-        json_data = json.loads(script_data)
-        url = json_data['url']
+        # script_data = soup.find('script', type='application/ld+json').string
+        # json_data = json.loads(script_data)
+        # url = json_data['url']
+        url = soup['href']
+
         prop_ID_match = re.search(r'/([^/]+)$', url)
         if prop_ID_match:
             return prop_ID_match.group(1)
@@ -166,41 +168,27 @@ gp_links = [f'{base_url}/for-sale/gauteng/johannesburg/33',
             f'{base_url}/for-sale/gauteng/midrand/24']
 
 for loc in gp_links:    
-    response_text = session.get(loc)
-    home_page = BeautifulSoup(response_text.content, 'html.parser')
-    new_links = []
+    x = loc
     try:
-        inner = home_page
-        ul2 = inner.find('ul', class_='region-content-holder__unordered-list')
-        if ul2:
-            li_items2 = ul2.find_all('li', class_='region-content-holder__list')
-            for area2 in li_items2:
-                link2 = area2.find('a')
-                link2 = f"{base_url}{link2.get('href')}"
-                new_links.append(link2)
-        else:
-            new_links.append(loc)
-    except Exception as e:
-        print(f"Request failed for {loc}: {e}")
-    
-    for x in new_links:
-        try:
-            land = session.get(x)
-            land_html = BeautifulSoup(land.content, 'html.parser')
-            pgs = getPages(land_html, x)
-            for p in range(1, pgs + 1):
-                home_page = session.get(f"{x}?page={p}")
-                soup = BeautifulSoup(home_page.content, 'html.parser')
-                prop_contain = soup.find_all('a', class_='listing-result')
-                for x_page in prop_contain:
-                    prop_id = getIds(x_page)
-                    if prop_id:
-                        list_url = f"{base_url}/for-sale/something/something/something/{prop_id}"
-                        queue.put({"url": list_url, "extract_function": extractor})
-                        queue.put({"url": list_url, "extract_function": extractor_pics})
-        except Exception as e:
-            print(f"Failed to process URL {x}: {e}")
+        land = session.get(x)
+        land_html = BeautifulSoup(land.content, 'html.parser')
+        pgs = 3
+        # getPages(land_html, x)
 
+        for p in range(1, pgs + 1):
+            home_page = session.get(f"{x}?pt=2&page={p}")
+            # home_page = session.get(f"{x}?page={p}")
+            soup = BeautifulSoup(home_page.content, 'html.parser')
+            prop_contain = soup.find_all('a', class_='featured-listing')
+            prop_contain.extend(soup.find_all('a', class_='listing-result'))
+            for x_page in prop_contain:
+                prop_id = getIds(x_page)
+                if prop_id:
+                    list_url = f"{base_url}/for-sale/something/something/something/{prop_id}"
+                    queue.put({"url": list_url, "extract_function": extractor})
+                    queue.put({"url": list_url, "extract_function": extractor_pics})
+    except Exception as e:
+        print(f"Failed to process URL {x}: {e}")
 # Start threads
 num_threads = 10  
 threads = []
