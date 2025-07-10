@@ -166,15 +166,7 @@ results = []
 pic_results = []
 
 provinces = {
-    'kwazulu-natal': '2',
-    'gauteng': '3',
-    'western-cape': '4',
-    'northern-cape': '5',
-    'free-state': '6',
-    'eastern-cape': '7',
-    'Limpopo': '8',
-    'north-west': '9',
-    'mpumalanga': '10'
+    'kwazulu-natal': '2'
 }
 
 for prov,p_num in provinces.items():  #range(2, 11)
