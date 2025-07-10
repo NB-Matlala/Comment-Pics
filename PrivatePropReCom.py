@@ -157,35 +157,45 @@ async def main():
             writer_pics.writeheader()
 
             start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            provinces = {
+                'kwazulu-natal': '2',
+                'gauteng': '3',
+                'western-cape': '4',
+                'northern-cape': '5',
+                'free-state': '6',
+                'eastern-cape': '7',
+                'Limpopo': '8',
+                'north-west': '9',
+                'mpumalanga': '10'
+            }
+            async def process_province(prov,p_num):
+                # response_text = await fetch(session, f"{base_url}/commercial-sales/gauteng/{prov}", semaphore)
+                # home_page = BeautifulSoup(response_text, 'html.parser')
 
-            async def process_province(prov):
-                response_text = await fetch(session, f"{base_url}/commercial-sales/gauteng/{prov}", semaphore)
-                home_page = BeautifulSoup(response_text, 'html.parser')
-
-                links = []
-                ul = home_page.find('ul', class_='region-content-holder__unordered-list')
-                li_items = ul.find_all('li')
-                for area in li_items:
-                    link = area.find('a')
-                    link = f"{base_url}{link.get('href')}"
-                    links.append(link)
+                # links = []
+                # ul = home_page.find('ul', class_='region-content-holder__unordered-list')
+                # li_items = ul.find_all('li')
+                # for area in li_items:
+                #     link = area.find('a')
+                #     link = f"{base_url}{link.get('href')}"
+                #     links.append(link)
 
                 new_links = []
-                for l in links:
-                    try:
-                        res_in_text = await fetch(session, f"{l}", semaphore)
-                        inner = BeautifulSoup(res_in_text, 'html.parser')
-                        ul2 = inner.find('ul', class_='region-content-holder__unordered-list')
-                        if ul2:
-                            li_items2 = ul2.find_all('li', class_='region-content-holder__list')
-                            for area2 in li_items2:
-                                link2 = area2.find('a')
-                                link2 = f"{base_url}{link2.get('href')}"
-                                new_links.append(link2)
-                        else:
-                            new_links.append(l)
-                    except aiohttp.ClientError as e:
-                        print(f"Request failed for {l}: {e}")
+                # for l in links:
+                #     try:
+                #         res_in_text = await fetch(session, f"{l}", semaphore)
+                #         inner = BeautifulSoup(res_in_text, 'html.parser')
+                #         ul2 = inner.find('ul', class_='region-content-holder__unordered-list')
+                #         if ul2:
+                #             li_items2 = ul2.find_all('li', class_='region-content-holder__list')
+                #             for area2 in li_items2:
+                #                 link2 = area2.find('a')
+                #                 link2 = f"{base_url}{link2.get('href')}"
+                #                 new_links.append(link2)
+                #         else:
+                new_links.append(f"{base_url}/for-sale/{prov}/{p_num}")
+                    # except aiohttp.ClientError as e:
+                    #     print(f"Request failed for {l}: {e}")
 
                 async def process_link(x):
                     try:
@@ -240,7 +250,7 @@ async def main():
                 tasks = [process_id(list_id) for list_id in ids]
                 await asyncio.gather(*tasks)
 
-            await asyncio.gather(*(process_province(prov) for prov in range(2, 11)))
+            await asyncio.gather(*(process_province(prov,p_num) for prov,p_num in provinces.items())
             await process_ids()
             end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             print(f"Start Time: {start_time}")
