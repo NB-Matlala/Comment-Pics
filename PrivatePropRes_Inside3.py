@@ -163,32 +163,36 @@ filename_pics = "PrivPictures3.csv"
 queue = Queue()
 results = []
 pic_results = []
+provinces = {
+    'western-cape': '4'
+}
 
-x = f"{base_url}/for-sale/mpumalanga/4"
-# home_page = BeautifulSoup(response_text.content, 'html.parser')
-
-# links = []
-
-try:
-    land = session.get(x)
-    land_html = BeautifulSoup(land.content, 'html.parser')
-    pgs = 3
-    # getPages(land_html, x)
-
-    for p in range(1, pgs + 1):
-        home_page = session.get(f"{x}?pt=2&page={p}")
-        # home_page = session.get(f"{x}?page={p}")
-        soup = BeautifulSoup(home_page.content, 'html.parser')
-        prop_contain = soup.find_all('a', class_='featured-listing')
-        prop_contain.extend(soup.find_all('a', class_='listing-result'))
-        for x_page in prop_contain:
-            prop_id = getIds(x_page)
-            if prop_id:
-                list_url = f"{base_url}/for-sale/something/something/something/{prop_id}"
-                queue.put({"url": list_url, "extract_function": extractor})
-                queue.put({"url": list_url, "extract_function": extractor_pics})
-except Exception as e:
-    print(f"Failed to process URL {x}: {e}")
+for prov,p_num in provinces.items():  
+    x = f"{base_url}/for-sale/{prov}/{p_num}"
+    # home_page = BeautifulSoup(response_text.content, 'html.parser')
+    
+    # links = []
+    
+    try:
+        land = session.get(x)
+        land_html = BeautifulSoup(land.content, 'html.parser')
+        pgs = 3
+        # getPages(land_html, x)
+    
+        for p in range(1, pgs + 1):
+            home_page = session.get(f"{x}?pt=2&page={p}")
+            # home_page = session.get(f"{x}?page={p}")
+            soup = BeautifulSoup(home_page.content, 'html.parser')
+            prop_contain = soup.find_all('a', class_='featured-listing')
+            prop_contain.extend(soup.find_all('a', class_='listing-result'))
+            for x_page in prop_contain:
+                prop_id = getIds(x_page)
+                if prop_id:
+                    list_url = f"{base_url}/for-sale/something/something/something/{prop_id}"
+                    queue.put({"url": list_url, "extract_function": extractor})
+                    queue.put({"url": list_url, "extract_function": extractor_pics})
+    except Exception as e:
+        print(f"Failed to process URL {x}: {e}")
 
 
 # Start threads
