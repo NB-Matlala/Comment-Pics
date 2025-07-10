@@ -166,7 +166,17 @@ queue = Queue()
 results = []
 pic_results = []
 
-for prov in range(5, 11):
+
+provinces = {
+    'northern-cape': '5',
+    'free-state': '6',
+    'eastern-cape': '7',
+    'Limpopo': '8',
+    'north-west': '9',
+    'mpumalanga': '10'
+}
+
+for prov,p_num in provinces.items():  #range(2, 11)
     # response_text = session.get(f"{base_url}/for-sale/mpumalanga/{prov}")
     # home_page = BeautifulSoup(response_text.content, 'html.parser')
     
@@ -195,15 +205,14 @@ for prov in range(5, 11):
     #     except Exception as e:
     #         print(f"Request failed for {l}: {e}")
     
-    x = f"{base_url}/for-sale/mpumalanga/{prov}"
+    x = f"{base_url}/for-sale/{prov}/{p_num}"
     try:
         land = session.get(x)
         land_html = BeautifulSoup(land.content, 'html.parser')
-        pgs = 3
-        # getPages(land_html, x)
+        pgs = getPages(land_html, x)
 
         for p in range(1, pgs + 1):
-            home_page = session.get(f"{x}?pt=2&page={p}")
+            home_page = session.get(f"{x}?page={p}")
             # home_page = session.get(f"{x}?page={p}")
             soup = BeautifulSoup(home_page.content, 'html.parser')
             prop_contain = soup.find_all('a', class_='featured-listing')
