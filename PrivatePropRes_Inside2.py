@@ -178,8 +178,7 @@ for prov,p_num in provinces.items():  #range(2, 11)
     try:
         land = session.get(x)
         land_html = BeautifulSoup(land.content, 'html.parser')
-        pgs = 3
-        # getPages(land_html, x)
+        pgs = getPages(land_html, x)
     
         for p in range(1, pgs + 1):
             home_page = session.get(f"{x}?page={p}")
