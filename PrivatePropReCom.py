@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 import json
 import random
 import csv
+import gzip
 import math
 from datetime import datetime
 from azure.storage.blob import BlobClient
@@ -138,20 +139,22 @@ def extractor_pics(soup, prop_id): # extracts from created urls
 ######################################Functions##########################################################
 async def main():
     fieldnames = ['Listing ID', 'Description', 'Latitude', 'Longitude', 'Time_stamp']
-    filename = "PrivComments5.csv"
+    # filename = "PrivComments5.csv"
+    gz_filename = "PrivComments5.csv.gz"
 
     fieldnames_pics = ['Listing_ID', 'Photo_Link']
-    filename_pics = "PrivPictures5.csv"
+    # filename_pics = "PrivPictures5.csv"
+    gz_filename_pics = "PrivPictures5.csv.gz"
 
     ids = []
     semaphore = asyncio.Semaphore(500)
 
     async with aiohttp.ClientSession() as session:
-        with open(filename, 'a', newline='', encoding='utf-8-sig') as csvfile, \
-             open(filename_pics, 'a', newline='', encoding='utf-8-sig') as csvfile_pics:
+        with gzip.open(gz_filename, 'wt', newline='', encoding='utf-8-sig') as gzfile, \
+             gzip.open(gz_filename_pics, 'wt', newline='', encoding='utf-8-sig') as gzfile_pics:
 
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer_pics = csv.DictWriter(csvfile_pics, fieldnames=fieldnames_pics)
+            writer = csv.DictWriter(gzfile, fieldnames=fieldnames)
+            writer_pics = csv.DictWriter(gzfile_pics, fieldnames=fieldnames_pics)
 
             writer.writeheader()
             writer_pics.writeheader()
@@ -260,16 +263,16 @@ async def main():
     container_name = "comments-pics"
 
     # Uploading PrivComments.csv
-    blob_name_comments = "PrivComments5.csv"
+    blob_name_comments = "PrivComments5.csv.gz"
     blob_client_comments = BlobClient.from_connection_string(connection_string, container_name, blob_name_comments)
-    with open(filename, "rb") as data:
+    with open(gz_filename, "rb") as data:
         blob_client_comments.upload_blob(data, overwrite=True)
         print(f"File uploaded to Azure Blob Storage: {blob_name_comments}")
 
     # Uploading PrivPictures.csv
-    blob_name_pics = "PrivPictures5.csv"
+    blob_name_pics = "PrivPictures5.csv.gz"
     blob_client_pics = BlobClient.from_connection_string(connection_string, container_name, blob_name_pics)
-    with open(filename_pics, "rb") as data_pics:
+    with open(gz_filename_pics, "rb") as data_pics:
         blob_client_pics.upload_blob(data_pics, overwrite=True)
         print(f"File uploaded to Azure Blob Storage: {blob_name_pics}")
 
