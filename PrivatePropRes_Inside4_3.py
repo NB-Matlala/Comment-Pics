@@ -10,6 +10,7 @@ import threading
 from queue import Queue
 from datetime import datetime
 import csv
+import gzip
 from azure.storage.blob import BlobClient
 import os
 
@@ -155,10 +156,10 @@ def getIds(soup):
 
 ##################################################################################
 fieldnames = ['Listing ID', 'Description', 'Latitude', 'Longitude', 'Time_stamp']
-filename = "PrivComments4_3.csv"
+gz_filename = "PrivComments4_3.csv.gz"
 
 fieldnames_pics = ['Listing_ID', 'Photo_Link']
-filename_pics = "PrivPictures4_3.csv"
+gz_filename_pics = "PrivPictures4_3.csv.gz"
 
 # Initialize thread queue and results list
 queue = Queue()
@@ -209,12 +210,12 @@ for t in threads:
     t.join()
 
 # Write results to CSV files
-with open(filename, mode='w', newline='', encoding='utf-8') as file:
+with gzip.open(gz_filename, mode='wt', newline='', encoding='utf-8') as file:
     writer = csv.DictWriter(file, fieldnames=fieldnames)
     writer.writeheader()
     writer.writerows(results)
 
-with open(filename_pics, mode='w', newline='', encoding='utf-8') as file:
+with gzip.open(gz_filename_pics, mode='wt', newline='', encoding='utf-8') as file:
     writer = csv.DictWriter(file, fieldnames=fieldnames_pics)
     writer.writeheader()
     writer.writerows(pic_results)
@@ -224,17 +225,17 @@ blob_connection_string = f"{con_str_coms}"
 blob = BlobClient.from_connection_string(
     blob_connection_string,
     container_name="comments-pics",
-    blob_name=filename
+    blob_name=gz_filename
 )
-with open(filename, "rb") as data:
+with open(gz_filename, "rb") as data:
     blob.upload_blob(data, overwrite=True)
 
 blob_pics = BlobClient.from_connection_string(
     blob_connection_string,
     container_name="comments-pics",
-    blob_name=filename_pics
+    blob_name=gz_filename_pics
 )
-with open(filename_pics, "rb") as data:
+with open(gz_filename_pics, "rb") as data:
     blob_pics.upload_blob(data, overwrite=True)
 
 print("CSV files uploaded to Azure Blob Storage.")
