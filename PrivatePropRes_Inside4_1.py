@@ -208,12 +208,12 @@ for t in threads:
     t.join()
 
 # Write results to CSV files
-with gzip.open(gz_filename, mode='w', newline='', encoding='utf-8') as file:
+with gzip.open(gz_filename, mode='wt', newline='', encoding='utf-8') as file:
     writer = csv.DictWriter(file, fieldnames=fieldnames)
     writer.writeheader()
     writer.writerows(results)
 
-with gzip.open(gz_filename_pics, mode='w', newline='', encoding='utf-8') as file:
+with gzip.open(gz_filename_pics, mode='wt', newline='', encoding='utf-8') as file:
     writer = csv.DictWriter(file, fieldnames=fieldnames_pics)
     writer.writeheader()
     writer.writerows(pic_results)
