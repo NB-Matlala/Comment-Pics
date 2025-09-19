@@ -213,7 +213,7 @@ for t in threads:
     t.join()
 
 # Write results to CSV files
-with gzip.open(filename, mode='wt', newline='', encoding='utf-8') as file:
+with gzip.open(gz_filename, mode='wt', newline='', encoding='utf-8') as file:
     writer = csv.DictWriter(file, fieldnames=fieldnames)
     writer.writeheader()
     writer.writerows(results)
