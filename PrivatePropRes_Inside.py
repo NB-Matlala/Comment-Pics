@@ -162,7 +162,7 @@ gz_filename = "PrivComments.csv.gz"
 
 fieldnames_pics = ['Listing_ID', 'Photo_Link']
 # filename_pics = "PrivPictures.csv"
-filename_pics = "PrivPictures.csv.gz"
+gz_filename_pics = "PrivPictures.csv.gz"
 
 # Initialize thread queue and results list
 queue = Queue()
