@@ -22,7 +22,8 @@ async def fetch(session, url, semaphore):
 ######################################Functions##########################################################
 def getPages(soupPage, url):
     try:
-        num_pg = soupPage.find('div', class_='listing-results-layout__mobile-item-count txt-small-regular')
+        num_pg = soupPage.find('div', class_='sort-and-listing-count')
+        # ('div', class_='listing-results-layout__mobile-item-count txt-small-regular')
         num_pgV = num_pg.text.split('of ')[-1]
         num_pgV = num_pgV.replace('\xa0', '').replace(' results', '')
         pages = math.ceil(int(num_pgV) / 20)
