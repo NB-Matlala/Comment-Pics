@@ -82,7 +82,7 @@ def extractor(soup, url):
         lists = prop_div.find('ul', class_='property-details__list')
         features = lists.find_all('li')
         for feature in features:
-            icon = feature.find('svg').find('use').get('xlink:href')
+            icon = feature.find('svg').find('use').get('href')
             if '#listing-alt' in icon:
                 prop_ID = feature.find('span', class_='property-details__value').text.strip()
     except KeyError:
@@ -119,7 +119,7 @@ def extractor_pics(soup, prop_id): # extracts from created urls
         lists = prop_div.find('ul', class_='property-details__list')
         features = lists.find_all('li')
         for feature in features:
-            icon = feature.find('svg').find('use').get('xlink:href')
+            icon = feature.find('svg').find('use').get('href')
             if '#listing-alt' in icon:
                 prop_ID = feature.find('span', class_='property-details__value').text.strip()
     except KeyError:
