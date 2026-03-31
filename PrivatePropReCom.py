@@ -23,7 +23,6 @@ async def fetch(session, url, semaphore):
 def getPages(soupPage, url):
     try:
         num_pg = soupPage.find('div', class_='sort-and-listing-count')
-        # ('div', class_='listing-results-layout__mobile-item-count txt-small-regular')
         num_pgV = num_pg.text.split('of ')[-1]
         num_pgV = num_pgV.replace('\xa0', '').replace(' results', '')
         pages = math.ceil(int(num_pgV) / 20)
@@ -34,9 +33,6 @@ def getPages(soupPage, url):
 
 def getIds(soup):
     try:
-        # script_data = soup.find('script', type='application/ld+json').string
-        # json_data = json.loads(script_data)
-        # url = json_data['url']
         url = soup['href']
 
         prop_ID_match = re.search(r'/([^/]+)$', url)
@@ -48,28 +44,6 @@ def getIds(soup):
 
 
 def extractor(soup, url): # extracts from created urls
-    # try:
-    #     prop_ID = None
-    #     prop_div = soup.find('div', class_='property-features')
-    #     lists = prop_div.find('ul', class_='property-features__list')
-    #     features = lists.find_all('li')
-    #     for feature in features:
-    #         icon = feature.find('svg').find('use').get('xlink:href')
-    #         if '#listing-alt' in icon:
-    #             prop_ID = feature.find('span',class_='property-features__value').text.strip()
-    # except KeyError:
-    #     prop_ID = None
-
-    # try:
-    #     comment_div = soup.find('div', class_='listing-description__text')
-    #     prop_desc = comment_div.text.strip()
-    # except:
-    #     prop_desc = None
-
-    # current_datetime = datetime.now().strftime('%Y-%m-%d')
-
-    # return {
-    #     "Listing ID": prop_ID, "Description": prop_desc, "Time_stamp": current_datetime}
     try:
         prop_ID = None
         prop_div = soup.find('div', class_='property-details')
@@ -89,15 +63,6 @@ def extractor(soup, url): # extracts from created urls
     try:
         comment_div = soup.find('div', class_='listing-description__text')
         prop_desc = comment_div.text.strip()
-        # script_tag = soup.find('div',class_='listing-details').find('script', type='application/ld+json')
-        # photo_data = []
-        # # print(script_tag.text)
-        # if script_tag:
-        #     script_content = script_tag.string
-        #     # script_data2 = re.search(r'application/ld+json\s*=\s*({.*?});', script_content, re.DOTALL).group(1)
-        #     json_data = json.loads(script_content)
-        #     latitude = json_data['geo']['latitude']
-        #     longitude = json_data['geo']['longitude']
     except:
         print('Error. Cannot find comments')
     
@@ -173,34 +138,9 @@ async def main():
                 'mpumalanga': '10'
             }
             async def process_province(prov,p_num):
-                # response_text = await fetch(session, f"{base_url}/commercial-sales/gauteng/{prov}", semaphore)
-                # home_page = BeautifulSoup(response_text, 'html.parser')
-
-                # links = []
-                # ul = home_page.find('ul', class_='region-content-holder__unordered-list')
-                # li_items = ul.find_all('li')
-                # for area in li_items:
-                #     link = area.find('a')
-                #     link = f"{base_url}{link.get('href')}"
-                #     links.append(link)
-
                 new_links = []
-                # for l in links:
-                #     try:
-                #         res_in_text = await fetch(session, f"{l}", semaphore)
-                #         inner = BeautifulSoup(res_in_text, 'html.parser')
-                #         ul2 = inner.find('ul', class_='region-content-holder__unordered-list')
-                #         if ul2:
-                #             li_items2 = ul2.find_all('li', class_='region-content-holder__list')
-                #             for area2 in li_items2:
-                #                 link2 = area2.find('a')
-                #                 link2 = f"{base_url}{link2.get('href')}"
-                #                 new_links.append(link2)
-                #         else:
                 new_links.append(f"{base_url}/for-sale/{prov}/{p_num}")
-                    # except aiohttp.ClientError as e:
-                    #     print(f"Request failed for {l}: {e}")
-
+                
                 async def process_link(x):
                     try:
                         x_response_text = await fetch(session, x, semaphore)
