@@ -128,14 +128,14 @@ async def main():
             start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             provinces = {
                 'kwazulu-natal': '2',
-                'gauteng': '3',
-                'western-cape': '4',
-                'northern-cape': '5',
-                'free-state': '6',
-                'eastern-cape': '7',
-                'Limpopo': '8',
-                'north-west': '9',
-                'mpumalanga': '10'
+                'gauteng': '3'
+                # 'western-cape': '4',
+                # 'northern-cape': '5',
+                # 'free-state': '6',
+                # 'eastern-cape': '7',
+                # 'Limpopo': '8',
+                # 'north-west': '9',
+                # 'mpumalanga': '10'
             }
             async def process_province(prov,p_num):
                 new_links = []
