@@ -128,7 +128,7 @@ async def main():
             start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             provinces = {
                 'kwazulu-natal': '2',
-                'gauteng': '3'
+                'gauteng': '3',
                 'western-cape': '4',
                 'northern-cape': '5',
                 'free-state': '6',
