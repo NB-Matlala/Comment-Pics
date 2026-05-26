@@ -139,7 +139,7 @@ async def main():
             }
             async def process_province(prov,p_num):
                 new_links = []
-                new_links.append(f"{base_url}/for-sale/{prov}/{p_num}")
+                new_links.append(f"{base_url}/commercial-sales/{prov}/{p_num}")
                 
                 async def process_link(x):
                     try:
