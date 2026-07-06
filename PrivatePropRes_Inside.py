@@ -247,12 +247,12 @@ for t in threads:
     t.join()
 
 # Write results to Gzip files
-with open(gz_filename, mode='wt', newline='', encoding='utf-8') as gzfile:
+with gzip.open(gz_filename, mode='wt', newline='', encoding='utf-8') as gzfile:
     writer = csv.DictWriter(gzfile, fieldnames=fieldnames)
     writer.writeheader()
     writer.writerows(results)
 
-with open(gz_filename_pics, mode='wt', newline='', encoding='utf-8') as gzfile:
+with gzip.open(gz_filename_pics, mode='wt', newline='', encoding='utf-8') as gzfile:
     writer = csv.DictWriter(gzfile, fieldnames=fieldnames_pics)
     writer.writeheader()
     writer.writerows(pic_results)
