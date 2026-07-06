@@ -220,7 +220,7 @@ with gzip.open(gz_filename, mode='wt', newline='', encoding='utf-8') as gzfile:
     writer.writeheader()
     writer.writerows(results)
 
-with open(gz_filename_pics, mode='wt', newline='', encoding='utf-8') as gzfile:
+with gzip.open(gz_filename_pics, mode='wt', newline='', encoding='utf-8') as gzfile:
     writer = csv.DictWriter(gzfile, fieldnames=fieldnames_pics)
     writer.writeheader()
     writer.writerows(pic_results)
