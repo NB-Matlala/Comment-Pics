@@ -1,6 +1,7 @@
 name: Web PrivPropRes(Inside)2
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows: ["Web PrivPropRes(Inside)"]
     types:
