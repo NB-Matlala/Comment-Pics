@@ -1,6 +1,7 @@
 name: Web PrivPropRes(Inside)4_1
 
 on:
+  workflow_dispatch:
   # push:
   #   branches:
   #     - main
